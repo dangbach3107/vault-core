@@ -1,0 +1,25 @@
+{
+  "company_name": "Công ty Cổ phần Phần mềm Kho vận Tân Bình",
+  "tax_id": "0312345678",
+  "founding_year": 2011,
+  "province": "Bình Dương",
+  "industry_category": "Warehouse Management & Logistics Software (WMS)",
+  "annual_revenue_vnd": 72000000000,
+  "ebitda_margin_pct": 18.5,
+  "net_debt_vnd": 5000000000,
+  "employee_count": 65,
+  "key_clients_description": "Hơn 40 khách hàng nhà máy chế tạo điện tử và dệt may tại Bình Dương và Đồng Nai",
+  "tech_stack": [
+    "Java Spring Boot",
+    "React",
+    "PostgreSQL",
+    "Docker",
+    "AWS S3",
+    "Redis"
+  ],
+  "deal_type": "SECONDARY",
+  "target_stake_pct": 30.0,
+  "expected_valuation_vnd": 250000000000,
+  "is_audited": true,
+  "auditor_name": "A&C Auditing Company Vietnam"
+}

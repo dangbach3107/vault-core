@@ -1,0 +1,25 @@
+{
+  "deal_id": "deal_wms_binhduong_01",
+  "project_name": "VAULT_WMS_01",
+  "scan_summary": {
+    "repository_url": "git@github.com:client-repo/core-wms-platform.git",
+    "total_lines_of_code": 142850,
+    "primary_languages": ["Java", "TypeScript", "SQL"],
+    "scanner_tools": ["SonarQube 10.4 Enterprise", "Snyk Open Source CLI v1.1290"],
+    "metrics": {
+      "technical_debt_ratio_pct": 14.2,
+      "test_coverage_pct": 17.8,
+      "code_smells_count": 420,
+      "bugs_count": 28,
+      "vulnerabilities_count": 6
+    },
+    "license_flags": [
+      {
+        "package": "com.agpl.billing:core-calc",
+        "version": "2.4.1",
+        "license": "AGPL-3.0",
+        "risk": "COPYLEFT_VIOLATION_P0"
+      }
+    ]
+  }
+}

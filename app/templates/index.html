@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAULT Core Engine — Live Interactive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        vault: {
+                            red: '#D32F2F',
+                            dark: '#0F172A',
+                            card: '#1E293B',
+                            border: '#334155',
+                            accent: '#38BDF8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .watermark-overlay {
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(220, 38, 38, 0.08),
+                rgba(220, 38, 38, 0.08) 35px,
+                rgba(0, 0, 0, 0) 35px,
+                rgba(0, 0, 0, 0) 90px
+            );
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- Header Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-lg bg-red-600 flex items-center justify-center font-bold text-white shadow-lg shadow-red-600/30">
+                    V
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight text-white">VAULT <span class="text-red-500 font-semibold text-sm">CORE MVP</span></span>
+                    <p class="text-xs text-slate-400">Verified Access to Unlisted Listings & Transactions • Rikkeisoft</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    ● Engine Online
+                </span>
+                <a href="/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-md border border-slate-700 transition">
+                    Swagger API Docs ↗
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Welcome Hero -->
+        <div class="mb-8 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-800 shadow-xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">VAULT Core Framework — 4 Module Kỹ thuật Lõi</h1>
+                    <p class="text-sm text-slate-400 mt-1 max-w-3xl">
+                        Mô hình MVP vận hành bán tự động chứng minh thị trường: Khử định danh hồ sơ bên bán, Bảo mật phòng dữ liệu VDR thời gian thực, Phê duyệt ký số kép và Khung thẩm định công nghệ lượng hóa trừ lùi giá M&A.
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="loadSampleDeal()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium transition shadow-md shadow-red-600/20">
+                        ⚡ Nạp Hồ Sơ Mẫu (Bình Dương WMS)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 Module Tabs -->
+        <div class="flex border-b border-slate-800 mb-6 space-x-2 overflow-x-auto">
+            <button onclick="switchTab('profile')" id="tab-btn-profile" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-red-500 text-red-400 flex items-center gap-2">
+                <span>1. Trust Profile Engine</span>
+            </button>
+            <button onclick="switchTab('vdr')" id="tab-btn-vdr" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                <span>2. Secure VDR & Watermark</span>
+            </button>
+            <button onclick="switchTab('approval')" id="tab-btn-approval" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                <span>3. Two-Person Gate (NDA)</span>
+            </button>
+            <button onclick="switchTab('techdd')" id="tab-btn-techdd" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+                <span>4. Tech DD & Remediation</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: TRUST PROFILE ENGINE -->
+        <section id="tab-profile" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Input Form -->
+                <div class="lg:col-span-5 bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <span class="w-6 h-6 rounded bg-slate-800 text-red-400 text-xs flex items-center justify-center font-mono">01</span>
+                        Dữ Liệu Thô Bên Bán (Seller Raw Input)
+                    </h2>
+                    <form id="sellerForm" onsubmit="generateProfile(event)" class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Tên Công Ty (Nhạy cảm)</label>
+                            <input type="text" id="company_name" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="Công ty Cổ phần Phần mềm Kho vận Tân Bình">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Mã Số Thuế</label>
+                                <input type="text" id="tax_id" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="0312345678">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Tỉnh Thành</label>
+                                <input type="text" id="province" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="Bình Dương">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Lĩnh Vực / Sản Phẩm</label>
+                            <input type="text" id="industry_category" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="Warehouse Management & Logistics Software (WMS)">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Doanh Thu Năm (VNĐ)</label>
+                                <input type="number" id="annual_revenue_vnd" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="72000000000">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Biên EBITDA (%)</label>
+                                <input type="number" step="0.1" id="ebitda_margin_pct" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="18.5">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Quy Mô Nhân Sự</label>
+                                <input type="number" id="employee_count" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="65">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Cổ Phần Chào Bán (%)</label>
+                                <input type="number" id="target_stake_pct" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="30">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Tech Stack chính</label>
+                            <input type="text" id="tech_stack" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-white" value="Java Spring Boot, React, PostgreSQL, Docker, AWS">
+                        </div>
+                        <button type="submit" class="w-full mt-2 py-2 bg-red-600 hover:bg-red-500 font-semibold rounded text-white transition flex items-center justify-center gap-2">
+                            <span>Khử Định Danh & Sinh Trust Profile</span> ➔
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Output 3 Layers -->
+                <div class="lg:col-span-7 space-y-4">
+                    <!-- Layer 1 Teaser Preview -->
+                    <div class="bg-slate-900 p-5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs">LỚP 1: BLIND TEASER</span>
+                                <span id="projectCodeBadge" class="text-xs text-slate-400">VAULT_WMS_DEMO</span>
+                            </h3>
+                            <span class="text-xs text-slate-500 font-mono">Công khai cho Buyer đã duyệt</span>
+                        </div>
+                        <div id="teaserContent" class="mt-4 text-xs space-y-3">
+                            <p class="text-slate-300 font-medium text-sm" id="teaserHeadlineVi">Cơ hội đầu tư chiến lược vào Doanh nghiệp phần mềm WMS tại Vùng kinh tế Đông Nam Bộ</p>
+                            <p class="text-slate-500 italic" id="teaserHeadlineJa">ベトナムにおける戦略的ソフトウェア企業への出資機会</p>
+                            
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                                <div class="bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
+                                    <div class="text-slate-400 text-[10px]">QUY MÔ DOANH THU</div>
+                                    <div class="font-bold text-white mt-0.5" id="teaserRevenue">50 – 100 tỷ VNĐ</div>
+                                </div>
+                                <div class="bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
+                                    <div class="text-slate-400 text-[10px]">BIÊN LỢI NHUẬN</div>
+                                    <div class="font-bold text-white mt-0.5" id="teaserEbitda">15% – 20%</div>
+                                </div>
+                                <div class="bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
+                                    <div class="text-slate-400 text-[10px]">QUY MÔ KỸ SƯ</div>
+                                    <div class="font-bold text-white mt-0.5" id="teaserStaff">50 – 100 kỹ sư</div>
+                                </div>
+                                <div class="bg-slate-800/60 p-2.5 rounded border border-slate-700/50">
+                                    <div class="text-slate-400 text-[10px]">CỔ PHẦN MỤC TIÊU</div>
+                                    <div class="font-bold text-red-400 mt-0.5" id="teaserStake">Khoảng 30%</div>
+                                </div>
+                            </div>
+
+                            <div class="pt-2">
+                                <span class="text-slate-400 text-[10px] block mb-1">TECH STACK CỐT LÕI (ẨN TÊN MODULE):</span>
+                                <div id="teaserStackTags" class="flex flex-wrap gap-1.5">
+                                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]">Java</span>
+                                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]">React</span>
+                                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]">AWS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layer 2 Preview Notice -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800/80 text-xs flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-slate-300 block">LỚP 2: CONFIDENTIAL INFORMATION MEMORANDUM (CIM)</span>
+                            <span class="text-slate-500 text-[11px]">Hiện đang khóa bảo vệ. Yêu cầu Bên mua ký NDA và nhận Chấp thuận kép từ Founder bên bán.</span>
+                        </div>
+                        <button onclick="switchTab('approval')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 text-xs">
+                            Xem Cổng Ký NDA ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: SECURE VDR & WATERMARK -->
+        <section id="tab-vdr" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- VDR Directory Index -->
+                <div class="lg:col-span-5 bg-slate-900 p-5 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-sm font-bold text-white flex items-center justify-between">
+                        <span>Cây Thư Mục VDR 6 Phân Hệ</span>
+                        <span class="text-xs text-red-400 bg-red-950/60 px-2 py-0.5 rounded border border-red-800/50">DRM Protected</span>
+                    </h3>
+                    <div id="vdrDocList" class="space-y-2 text-xs">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Live Document Viewer with Dynamic Watermark -->
+                <div class="lg:col-span-7 bg-slate-900 p-5 rounded-xl border border-slate-800 flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3 text-xs">
+                        <div>
+                            <span class="font-bold text-white block" id="vdrActiveDocTitle">Báo cáo Kiểm toán độc lập 3 năm (2023 - 2025)</span>
+                            <span class="text-slate-400 text-[11px]">Chế độ Sandbox: Cấm in ấn • Cấm tải xuống • Mã băm SHA-256</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-[10px] font-mono">WATERMARK ON</span>
+                        </div>
+                    </div>
+
+                    <!-- Viewer Screen Mockup -->
+                    <div class="relative bg-slate-950 rounded-lg p-6 border border-slate-800 min-h-[340px] flex flex-col justify-between overflow-hidden">
+                        <!-- Watermark Overlay -->
+                        <div id="vdrWatermarkCanvas" class="absolute inset-0 watermark-overlay pointer-events-none flex items-center justify-center text-center select-none text-red-500/30 font-mono text-[11px] leading-relaxed transform rotate-[-20deg]">
+                            VAULT STRICTLY CONFIDENTIAL<br>
+                            VIEWER: tanaka@sumitomo-corp.co.jp | IP: 118.69.182.44<br>
+                            ACCESS FOR DUE DILIGENCE ONLY • 2026-09-11 UTC
+                        </div>
+
+                        <!-- Sample Document Content -->
+                        <div class="relative z-10 text-xs text-slate-300 space-y-4 select-none">
+                            <div class="border-b border-slate-800 pb-2 flex justify-between">
+                                <span class="font-bold text-slate-200">INDEPENDENT AUDIT REPORT (SUMMARY)</span>
+                                <span class="text-slate-500 font-mono">TRANG 01 / 45</span>
+                            </div>
+                            <p class="leading-relaxed">
+                                Chúng tôi đã kiểm toán báo cáo tài chính của Công ty Cổ phần Phần mềm Kho vận Tân Bình cho năm tài chính kết thúc ngày 31/12/2025. Theo ý kiến của chúng tôi, báo cáo phản ánh trung thực và hợp lý tình hình tài chính của Công ty.
+                            </p>
+                            <div class="grid grid-cols-2 gap-3 py-2">
+                                <div class="bg-slate-900/90 p-2.5 rounded border border-slate-800">
+                                    <span class="text-slate-400 text-[10px] block">Doanh thu năm 2025</span>
+                                    <span class="font-bold text-emerald-400">72.150.000.000 VNĐ</span>
+                                </div>
+                                <div class="bg-slate-900/90 p-2.5 rounded border border-slate-800">
+                                    <span class="text-slate-400 text-[10px] block">Lợi nhuận gộp sau kiểm toán</span>
+                                    <span class="font-bold text-emerald-400">18.420.000.000 VNĐ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative z-10 text-[10px] text-slate-500 flex justify-between pt-4 border-t border-slate-800">
+                            <span>Bảo vệ quyền truy cập bởi VAULT DRM Kernel</span>
+                            <span>Audit Log ID: log_9f82a17c</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: TWO-PERSON APPROVAL GATE -->
+        <section id="tab-approval" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Quy Trình Phê Duyệt Kép Mở Khóa Tài Liệu (Two-Person Rule)</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Quyền truy cập Lớp 2 (CIM) và Lớp 3 (VDR) chỉ mở khi cả Founder Bên Bán và Cán Bộ Pháp Chế cùng chấp thuận.</p>
+                    </div>
+                    <span id="approvalOverallBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        TRẠNG THÁI: CHỜ PHÊ DUYỆT
+                    </span>
+                </div>
+
+                <!-- Simulation Steps -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <!-- Step 1: NDA -->
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+                        <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] font-bold">BƯỚC 1: KÝ SỐ NDA</span>
+                        <div class="font-semibold text-slate-200">Đối tác: Sumitomo Industrial Tech (Tokyo)</div>
+                        <p class="text-slate-400 text-[11px]">Đại diện ký: Mr. Kenji Tanaka (Senior Investment Director)</p>
+                        <div class="p-2 bg-slate-900 rounded font-mono text-[10px] text-emerald-400 border border-slate-800">
+                            ✓ E-Sign Verified: SHA256: 8f4c...3e19
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Seller Approval -->
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+                        <span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded text-[10px] font-bold">BƯỚC 2: CHỦ DOANH NGHIỆP BÁN</span>
+                        <div class="font-semibold text-slate-200">Founder: Ông Nguyễn Văn Tân</div>
+                        <p class="text-slate-400 text-[11px]">Chủ sở hữu 70% cổ phần, nắm quyền quyết định mở thông tin định danh.</p>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="simulateDecision('SELLER_FOUNDER', 'APPROVED')" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-[11px]">
+                                Duyệt (Approve)
+                            </button>
+                            <button onclick="simulateDecision('SELLER_FOUNDER', 'REJECTED')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]">
+                                Từ chối
+                            </button>
+                        </div>
+                        <div id="sellerStatusText" class="text-[10px] text-amber-400 font-mono">Trạng thái: Chờ Founder duyệt...</div>
+                    </div>
+
+                    <!-- Step 3: Legal Compliance -->
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+                        <span class="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-[10px] font-bold">BƯỚC 3: PHÁP CHẾ VAULT</span>
+                        <div class="font-semibold text-slate-200">Legal Officer: Ms. Đặng Minh Trang</div>
+                        <p class="text-slate-400 text-[11px]">Kiểm tra điều kiện đầu tư nước ngoài & bảo vệ dữ liệu xuyên biên giới.</p>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="simulateDecision('VAULT_COMPLIANCE', 'APPROVED')" class="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-[11px]">
+                                Duyệt (Approve)
+                            </button>
+                            <button onclick="simulateDecision('VAULT_COMPLIANCE', 'REJECTED')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]">
+                                Từ chối
+                            </button>
+                        </div>
+                        <div id="legalStatusText" class="text-[10px] text-amber-400 font-mono">Trạng thái: Chờ Pháp chế duyệt...</div>
+                    </div>
+                </div>
+
+                <!-- Unlocked Token Display -->
+                <div id="tokenUnlockedBox" class="hidden bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-lg text-xs space-y-2">
+                    <div class="flex items-center justify-between text-emerald-400 font-bold">
+                        <span>✓ ĐÃ MỞ KHÓA QUYỀN TRUY CẬP VDR THÀNH CÔNG!</span>
+                        <span class="font-mono text-[11px]">Hiệu lực: 14 ngày</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-950 rounded border border-emerald-500/20 font-mono text-slate-300 break-all">
+                        ACCESS TOKEN: <span id="displayTokenText" class="text-emerald-400 font-bold">vdr_auth_e847c01b44d7a83f982c7a1029e847c01b44d7a8</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TECH DD & REMEDIATION -->
+        <section id="tab-techdd" class="tab-content hidden space-y-6">
+            <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
+                    <div>
+                        <h3 class="text-base font-bold text-white">Khung Thẩm Định Công Nghệ 6 Trục (Tech DD) & Mô Hình Lượng Hóa Chi Phí</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Quy đổi các rủi ro mã nguồn, kiến trúc và an toàn thông tin thành con số trừ lùi giá đàm phán M&A.</p>
+                    </div>
+                    <button onclick="runTechDDEvaluation()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-semibold shadow-lg shadow-red-600/20">
+                        ⚡ Chạy Thẩm Định Lại (Run DD Scan)
+                    </button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 text-[11px] block">RỦI RO CRITICAL (P0)</span>
+                        <span class="text-2xl font-bold text-red-500 mt-1 block" id="ddP0Count">1</span>
+                        <span class="text-[10px] text-slate-500">Chặn tiến độ hoặc CP bắt buộc</span>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 text-[11px] block">RỦI RO CAO (P1)</span>
+                        <span class="text-2xl font-bold text-amber-500 mt-1 block" id="ddP1Count">2</span>
+                        <span class="text-[10px] text-slate-500">Cần sửa chữa kỹ thuật</span>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                        <span class="text-slate-400 text-[11px] block">DỰ TOÁN KHẮC PHỤC (CAPEX)</span>
+                        <span class="text-xl font-bold text-red-400 mt-1 block" id="ddCapex">330.000.000 đ</span>
+                        <span class="text-[10px] text-slate-500">Chi phí đầu tư 1 lần</span>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-lg border border-red-900/50 bg-red-950/20">
+                        <span class="text-red-400 font-semibold text-[11px] block">ĐỀ XUẤT TRỪ LÙI ĐỊNH GIÁ</span>
+                        <span class="text-xl font-bold text-red-400 mt-1 block" id="ddValuationAdjustment">-330.000.000 đ</span>
+                        <span class="text-[10px] text-slate-400">Trừ trực tiếp vào vốn mua</span>
+                    </div>
+                </div>
+
+                <!-- Findings Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border border-slate-800 rounded-lg overflow-hidden">
+                        <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Mức độ</th>
+                                <th class="p-3">Trục Thẩm Định</th>
+                                <th class="p-3">Phát hiện Kỹ thuật & Rủi ro</th>
+                                <th class="p-3 text-right">Chi phí ước tính</th>
+                                <th class="p-3">Hành động Đàm phán Đề xuất</th>
+                            </tr>
+                        </thead>
+                        <tbody id="techDDFindingsBody" class="divide-y divide-slate-800">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 mt-12 py-6 text-center text-xs text-slate-500">
+        VAULT Core MVP • Hệ sinh thái Rikkeisoft • Phiên bản kỹ thuật 2026
+    </footer>
+
+    <!-- Interactive Client-side Script -->
+    <script>
+        let currentDealId = "deal_wms_binhduong_01";
+        let sellerApproval = "PENDING";
+        let legalApproval = "PENDING";
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-red-500', 'text-red-400');
+                el.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+            activeBtn.classList.add('border-red-500', 'text-red-400');
+        }
+
+        async function loadSampleDeal() {
+            switchTab('profile');
+            document.getElementById('sellerForm').dispatchEvent(new Event('submit'));
+            loadVDRDocs();
+            runTechDDEvaluation();
+        }
+
+        async function generateProfile(e) {
+            if (e) e.preventDefault();
+            const payload = {
+                company_name: document.getElementById('company_name').value,
+                tax_id: document.getElementById('tax_id').value,
+                founding_year: 2011,
+                province: document.getElementById('province').value,
+                industry_category: document.getElementById('industry_category').value,
+                annual_revenue_vnd: parseFloat(document.getElementById('annual_revenue_vnd').value),
+                ebitda_margin_pct: parseFloat(document.getElementById('ebitda_margin_pct').value),
+                net_debt_vnd: 5000000000,
+                employee_count: parseInt(document.getElementById('employee_count').value),
+                key_clients_description: "Hơn 40 khách hàng nhà máy chế tạo điện tử",
+                tech_stack: document.getElementById('tech_stack').value.split(',').map(s => s.trim()),
+                deal_type: "SECONDARY",
+                target_stake_pct: parseFloat(document.getElementById('target_stake_pct').value),
+                expected_valuation_vnd: 250000000000,
+                is_audited: true,
+                auditor_name: "A&C Auditing"
+            };
+
+            try {
+                const res = await fetch('/api/v1/profile/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                currentDealId = data.deal_id;
+                const t = data.layer_1_teaser;
+                document.getElementById('projectCodeBadge').innerText = t.project_code;
+                document.getElementById('teaserHeadlineVi').innerText = t.headline_vi;
+                document.getElementById('teaserHeadlineJa').innerText = t.headline_ja;
+                document.getElementById('teaserRevenue').innerText = t.revenue_bracket;
+                document.getElementById('teaserEbitda').innerText = t.ebitda_bracket;
+                document.getElementById('teaserStaff').innerText = t.employee_bracket;
+                document.getElementById('teaserStake').innerText = t.target_stake_bracket;
+
+                const stackContainer = document.getElementById('teaserStackTags');
+                stackContainer.innerHTML = t.tech_stack.map(tag => 
+                    `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px]">${tag}</span>`
+                ).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadVDRDocs() {
+            try {
+                const res = await fetch(`/api/v1/vdr/documents/${currentDealId}`);
+                const docs = await res.json();
+                const container = document.getElementById('vdrDocList');
+                container.innerHTML = docs.map(doc => `
+                    <div onclick="selectVDRDoc('${doc.title}', '${doc.filename}')" class="p-2.5 bg-slate-950 hover:bg-slate-800/80 rounded border border-slate-800/80 cursor-pointer transition flex items-center justify-between">
+                        <div>
+                            <span class="font-medium text-slate-200 block">${doc.title}</span>
+                            <span class="text-[10px] text-slate-500 font-mono">${doc.folder} • ${(doc.file_size_bytes / 1024 / 1024).toFixed(1)} MB</span>
+                        </div>
+                        <span class="text-[10px] text-red-400 font-mono bg-red-950/40 px-1.5 py-0.5 rounded">View-Only</span>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function selectVDRDoc(title, filename) {
+            document.getElementById('vdrActiveDocTitle').innerText = title;
+        }
+
+        function simulateDecision(role, decision) {
+            if (role === 'SELLER_FOUNDER') {
+                sellerApproval = decision;
+                document.getElementById('sellerStatusText').innerText = `Trạng thái: ${decision === 'APPROVED' ? '✓ ĐÃ DUYỆT (Bởi Founder)' : '✗ ĐÃ TỪ CHỐI'}`;
+                document.getElementById('sellerStatusText').className = decision === 'APPROVED' ? 'text-[10px] text-emerald-400 font-mono' : 'text-[10px] text-red-400 font-mono';
+            } else {
+                legalApproval = decision;
+                document.getElementById('legalStatusText').innerText = `Trạng thái: ${decision === 'APPROVED' ? '✓ ĐÃ DUYỆT (Bởi Pháp chế)' : '✗ ĐÃ TỪ CHỐI'}`;
+                document.getElementById('legalStatusText').className = decision === 'APPROVED' ? 'text-[10px] text-emerald-400 font-mono' : 'text-[10px] text-red-400 font-mono';
+            }
+
+            const overallBadge = document.getElementById('approvalOverallBadge');
+            const tokenBox = document.getElementById('tokenUnlockedBox');
+
+            if (sellerApproval === 'APPROVED' && legalApproval === 'APPROVED') {
+                overallBadge.innerText = 'TRẠNG THÁI: CHẤP THUẬN TOÀN DIỆN (APPROVED)';
+                overallBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                tokenBox.classList.remove('hidden');
+            } else if (sellerApproval === 'REJECTED' || legalApproval === 'REJECTED') {
+                overallBadge.innerText = 'TRẠNG THÁI: TỪ CHỐI TRUY CẬP (REJECTED)';
+                overallBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20';
+                tokenBox.classList.add('hidden');
+            }
+        }
+
+        async function runTechDDEvaluation() {
+            try {
+                const res = await fetch(`/api/v1/techdd/evaluate/${currentDealId}`, { method: 'POST' });
+                const data = await res.json();
+                
+                document.getElementById('ddP0Count').innerText = data.critical_p0_count;
+                document.getElementById('ddP1Count').innerText = data.high_p1_count;
+                document.getElementById('ddCapex').innerText = (data.total_capex_deduction_vnd).toLocaleString('vi-VN') + ' đ';
+                document.getElementById('ddValuationAdjustment').innerText = '-' + (data.suggested_valuation_adjustment_vnd).toLocaleString('vi-VN') + ' đ';
+
+                const body = document.getElementById('techDDFindingsBody');
+                body.innerHTML = data.findings.map(f => `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${
+                                f.severity === 'P0_CRITICAL' ? 'bg-red-500/10 text-red-400 border border-red-500/30' :
+                                f.severity === 'P1_HIGH' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' :
+                                'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                            }">${f.severity}</span>
+                        </td>
+                        <td class="p-3 text-slate-400 text-[11px] font-mono">${f.axis}</td>
+                        <td class="p-3">
+                            <span class="font-bold text-slate-200 block">${f.title}</span>
+                            <span class="text-slate-400 text-[11px]">${f.description}</span>
+                        </td>
+                        <td class="p-3 text-right font-mono text-red-400 font-bold">
+                            ${f.estimated_cost_vnd.toLocaleString('vi-VN')} đ
+                        </td>
+                        <td class="p-3 text-slate-300 text-[11px]">${f.recommended_deal_action}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Tự động khởi chạy nạp hồ sơ demo ban đầu
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSampleDeal();
+        });
+    </script>
+</body>
+</html>
