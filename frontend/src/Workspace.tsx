@@ -6,6 +6,7 @@ import CompanyDetail from './features/profiles/CompanyDetail'
 import RoomList from './features/rooms/RoomList'
 import RoomPage from './features/rooms/RoomPage'
 import DocumentPage from './features/rooms/DocumentPage'
+import InvestorMvp from './features/investor-mvp/InvestorMvp'
 import './workspace.css'
 
 export default function Workspace() {
@@ -20,7 +21,8 @@ export default function Workspace() {
   const params = new URLSearchParams(hash.split('?')[1] || '')
   if (path === '/health') return <App />
   let screen = <CompanyList />
-  if (path === '/companies/new') screen = <CompanyForm />
+  if (path === '/investor-mvp') screen = <InvestorMvp />
+  else if (path === '/companies/new') screen = <CompanyForm />
   else if (path === '/rooms')
     screen = <RoomList companyId={params.get('company') || undefined} />
   else if (parts[0] === 'rooms' && parts[1])
@@ -52,6 +54,7 @@ export default function Workspace() {
         <nav aria-label="Điều hướng chính">
           <a href="#/companies">Doanh nghiệp</a>
           <a href="#/rooms">Phòng dữ liệu</a>
+          <a href="#/investor-mvp">Investor MVP</a>
           <a href="#/health">Kết nối API</a>
         </nav>
       </header>

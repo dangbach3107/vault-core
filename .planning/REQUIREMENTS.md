@@ -1,54 +1,59 @@
-# VAULT requirements
+# VAULT Core — yêu cầu hiện tại
 
-Baseline: 2026-09-11. Source keys, assumptions A-01/A-02 and decision IDs D-01–D-12 are defined in [PROJECT.md](PROJECT.md). All first-version requirements below are **planned and not yet accepted as complete**. Existing demos are partial evidence only; see [STATE.md](STATE.md).
+Cập nhật: **2026-09-14**.
 
-Acceptance may be demonstrated through reviewed forms and configured external tools. New application code is not required for every requirement. Where a policy is disputed, criteria depending on that policy remain pending its decision.
+## 1. Yêu cầu đã thể hiện trong A–Z Deal Workspace frontend MVP
 
-## First version: controlled proof/pilot
-
-| ID | Requirement and source | Acceptance criteria |
+| ID | Yêu cầu | Trạng thái / bằng chứng |
 | --- | --- | --- |
-| V1-01 | Qualify buyers using a structured Buyer Brief. S14 sections 1.1–1.2. | Record company/business unit/contact, capability need and 24-month objective, budget/ticket, decision timeline and sponsor, transaction type, pre/post-NDA information needs, Tech DD need/scope when applicable, and evidence/status. A brief missing budget, timeline or decision maker cannot be marked qualified. Record reviewer per D-10. |
-| V1-02 | Collect seller information and consent. S14 section 2.2; S16 section 1.1. | Intake covers legal identity, ownership and decision authority, business/customers, three years of revenue (or explicitly missing years), optional EBITDA with evidence, applicable tech assets, transaction type/stake, destination of funds, objectives and permitted data use. Record missing fields rather than fabricate values. No external sharing without recorded consent for its purpose. |
-| V1-03 | Track verification per fact. S14 section 2.3; S16 section 1.1. D-01. | Each fact records value, source/date, uploader, reviewer where reviewed, status and notes. A reviewed fixture distinguishes unsupported claims, provided evidence, reviewed evidence and third-party confirmation, and represents missing/conflicting/stale facts without promoting their trust. Canonical labels/mapping are approved before schema changes. No blanket audited badge. |
-| V1-04 | Produce controlled profile outputs. S14 section 2.4; S16 section 1.2. D-05. | Produce a Layer 1 teaser, Layer 2 identified profile, gap list and Tech DD scope draft from the same evidence. Teaser review checks names, clients, brands, distinctive free text, exact figures and identifying combinations; use approved numeric bands and generalized geography. Missing data remains missing. Layer 2 contains only approved identified detail. Seller approves teaser before sharing. |
-| V1-05 | Match manually with reasons. S14 section 3. | A scorecard rates industry, capability, size, deal type, tech and readiness from 1–5. Each suggested match includes buyer/seller, total score, three reasons, three risks/unknowns, permitted Layer 1 content, approval need and next step. Qualification precedes scoring; threshold/release owner follow D-10. No automated matching required. |
-| V1-06 | Gate disclosure by identity, NDA, scope and approval. S14 section 4; S16 sections 1.2 and 3. D-02/D-09. | Approve a role/layer/document matrix first. Demonstrate denied access for an unverified buyer, missing NDA for Layer 2, missing seller approval, wrong buyer/deal, and out-of-scope Layer 3 document. Layer 3 requires formal DD and the approved per-file/dual-approval policy. Test admin content restrictions and independently scoped download rights. |
-| V1-07 | Use an evidenced NDA workflow. S14 section 6.1; S16 section 3.1. | Reuse an approved signing tool or Legal process. Retain the actual signed document, signer evidence, version, timestamp and traceable hash/audit reference. A submitted name/email or hash of mock text is not signature evidence. Bind approvals to the intended buyer/deal; decide automated integration after process validation. |
-| V1-08 | Configure a data room using buy/reuse. S14 sections 4 and 6; S16 section 2. D-03/D-04. | Sandbox organizes legal/corporate, financial/tax, commercial/operations, technology/IP, HR and Q&A material. Demonstrate MFA for Layers 2/3, separate view/download rights, version history, audit export, expiry and revocation. Agree watermark and granular-log criteria; record observed download/print/copy limitations and obtain operational acceptance before real files. |
-| V1-09 | Maintain deal access and operational records. S14 sections 4.4–4.5; S16 section 2.3. | Q&A records have owner, deadline and status; retain incident records. Test that expired/revoked access ceases, seller-requested revocation is logged, and stopping a deal revokes rights and records a stop memo. Preserve relevant approval/version/access history using the agreed retention policy (D-09). |
-| V1-10 | Use a six-axis Tech DD checklist and evidence-backed report. S14 section 5; S16 section 4. | Checklist covers architecture/scalability, code/debt, security/privacy, IP technical evidence, key-person dependency and integration cost. Report includes summary, scope, received/missing material, findings, agreed severity (D-06), evidence, remediation, estimate, deal impact and limitations. Identify reviewer/signatory (D-10). Missing evidence never becomes an invented finding. |
-| V1-11 | Separate remediation estimates from legal/commercial decisions. S14 sections 5.1/5.4; S16 section 4.2. D-07. | Each estimate records action, effort/rate assumptions, currency, CAPEX/OPEX treatment and proposed deal action. Finance reviews totals, time basis and overlapping pre-closing/price effects. Legal reviews IP/legal conclusions. Report explicitly states Tech DD is not legal DD, legal IP ownership confirmation or business valuation, and is limited to supplied evidence/systems. |
-| V1-12 | Record build/buy choices and complete a dry run. S14 sections 6–7; S16 section 5. | Decision table identifies build/reuse/buy/defer items, rationale, owner and next trigger. Exercise one synthetic or authorized internal case from intake to teaser, NDA/access, DD report and deal stop. Retain outputs, access-test results, effort and unresolved defects. Pilot owner reviews evidence before declaring the first version complete. |
+| AZ-01 | Có route demo chính `#/investor-mvp` | `frontend/src/Workspace.tsx`, `InvestorMvp.tsx` |
+| AZ-02 | Cùng một deal mẫu đồng bộ qua Buyer/Seller/VAULT Admin/Legal/Tech DD/Finance | `InvestorMvp.tsx` dùng một `DealState` chung |
+| AZ-03 | Buyer request gồm 4 trường MVP | Buyer tab |
+| AZ-04 | Seller tạo hồ sơ mẫu và duyệt L1 teaser | Seller tab |
+| AZ-05 | Ghi nhận prep package fee ngay sau seller ký chuẩn hóa hồ sơ | Finance tab: `Record prep package fee` |
+| AZ-06 | Matching rule-based có điểm, lý do, risks | VAULT Admin tab |
+| AZ-07 | Layer 2 cần identity request + NDA + seller approval | `layer2Ready` logic |
+| AZ-08 | Indicative LOI bắt buộc trước Layer 3/VDR | `layer3Ready` logic |
+| AZ-09 | Legal duyệt L3, cross-border, no-custody | Legal tab |
+| AZ-10 | Seller duyệt từng file Layer 3 cho buyer | Seller tab |
+| AZ-11 | VDR chỉ mở sau gate L3 | VAULT Admin tab |
+| AZ-12 | Tech DD sau Indicative LOI + VDR, có findings/remediation/sign-off | Tech DD tab |
+| AZ-13 | Buyer gửi Definitive Offer sau Tech DD | Buyer tab |
+| AZ-14 | Legal closing checklist trước khi closed | Legal tab |
+| AZ-15 | Finance ghi success fee sau closing và phân biệt prep fee | Finance tab |
+| AZ-16 | Post-deal handoff to Rikkei | VAULT Admin tab |
+| AZ-17 | Có rule panel trong platform để demo-er không nói sai | `Quy tắc demo` section trong `InvestorMvp.tsx` |
 
-## Future candidates: not first-version commitments
+## 2. Yêu cầu backend đã có từ trước
 
-| ID | Candidate and source | Entry trigger and eventual acceptance outline |
+| ID | Yêu cầu | Trạng thái |
 | --- | --- | --- |
-| F-01 | Automate profile and report production. S14 section 6.1; S16 section 1.2. | Stable schemas and reviewed examples first; S14 suggests 10–20 profiles as a maturation signal. Automation preserves evidence, missingness, approved disclosure and human release review. |
-| F-02 | Integrate VDR/e-sign via APIs/webhooks. S16 sections 2–3. | Selected providers and validated manual controls first. Demonstrate authenticated provider events, buyer/deal binding, duplicate/replayed event handling, reconciled grants/revocations and durable audit records. These technical criteria are proposed integration checks, not source-selected protocols. |
-| F-03 | Add internal VAULT portal and durable workflow. S16 section 5. | Proven operational volume and approved architecture/business case first. Demonstrate scoped access and persistent deal state without widening disclosure. D-11/D-12 select React/TypeScript/Vite, Python/FastAPI and PostgreSQL tooling for the future implementation; MVP-01/MVP-02 are an explicitly authorized narrow subset; the broader portal remains deferred. |
-| F-04 | Automate matching. S14 section 6.1; S16 section 5. | Historical match/mismatch outcomes and agreed criteria first. Define evaluation targets with Consulting and compare proposed results with reviewed manual matches before use. No quality target is invented now. |
+| MVP-01 | Company / Trust Profile CRUD, 3 verification labels, L1/L2/L3 preview nội bộ | Đã có backend + frontend |
+| MVP-02 | Local data room: room, 6 groups, upload/list/preview/version | Đã có backend + frontend |
 
-Not scheduled: public marketplace, public fundraising/Book B, custom VDR/e-sign/scanning engines, autonomous AI DD or valuation. Reconsideration needs an explicit scope decision, not merely an empty roadmap slot.
+Hai module này có backend thật nhưng **chưa nối persistent với A–Z Deal Workspace**.
 
-## Engineering constraints for future implementation
+## 3. Yêu cầu chưa đạt / roadmap tiếp theo
 
-These derive from the user's planning request and subsequent implementation authorization. The latest scope extends ENG-01–ENG-03 to persistent internal profiles. Legacy migration, VDR provider controls and production acceptance remain separate. See STATE for evidence.
-
-| ID | Constraint | Acceptance when implementation is authorized |
+| ID | Yêu cầu | Ghi chú |
 | --- | --- | --- |
-| ENG-01 | Separate frontend and backend ownership | Frontend presentation lives under `frontend/`; Python API/persistence under `backend/`. The health scaffold preserves legacy code unmounted; future business migration requires verified behavior/imports. Follow [ARCHITECTURE](ARCHITECTURE.md). |
-| ENG-02 | Maintain a shared API contract | Backend schemas/routes export `contracts/openapi.json`; frontend consumes generated types from that snapshot. Producer/consumer changes are reviewed together and configured checks detect drift. Health/company/room export/types/checks exist; future routes must use the same process. |
-| ENG-03 | Use the selected tools and verify setup | Follow [TECH_STACK](TECH_STACK.md), configure component dependencies/tests and record successful commands before publishing them. Secrets stay backend-only; environment loading and public frontend settings are documented. |
+| BE-01 | Persist A–Z deal state vào PostgreSQL | Chưa có |
+| BE-02 | API cho buyer request, approvals, grants, Tech DD, fee lines | Chưa có |
+| BE-03 | Audit log view/download/approve/revoke | Chưa có |
+| SEC-01 | Auth/RBAC/Rikkei SSO | Chưa có |
+| SEC-02 | MFA cho L2/L3 | Chưa có |
+| VDR-01 | VDR/object storage production | Chưa có |
+| FILE-01 | Watermark + antivirus/file scan | Chưa có |
+| LEGAL-01 | Retention/deletion policy | Chưa chốt |
 
-## Authorized two-part application increment (2026-09-11)
+## 4. Acceptance hiện tại
 
-These narrower checks do not replace V1 operational acceptance. PROJECT A-03–A-05 defines draft/preview/file assumptions; D-04 records user approval of local synthetic storage.
+Frontend đã được kiểm bằng:
 
-| ID | User-prioritized scope | Completion criteria | Actual status |
-| --- | --- | --- | --- |
-| MVP-01 | Company intake and Trust Profile, related to V1-02–V1-04 | Create/edit/list/detail persists in PostgreSQL; backend rejects invalid money/years/status evidence and duplicate tax IDs; stale edits return 409. Per-fact three labels with source/review metadata, missing/conflict/expiry representation. Three internal preview layers; anonymous API omits identifying/free-text fields and exact figures. UI handles loading/error/success. Backend, component and real-browser persistence tests pass. | Implemented and locally verified with synthetic data. Not consent/release workflow, authenticated verification, gap-list or DD-scope automation. |
-| MVP-02 | Deal data rooms, related to V1-08 | Company/deal rooms, six source groups, upload validation, file listing, preview with unsupported-format fallback, immutable versions, shared contract and persistence/browser tests. | Implemented for local synthetic files. PDF/PNG/JPEG/TXT preview; DOCX/XLSX download fallback. Tests verify versions, room boundaries, rejected/failed writes and missing/tampered files. No MFA, watermark, buyer access or external VDR acceptance claimed. |
+```bash
+npm --prefix frontend run build
+npm --prefix frontend test
+npm --prefix frontend run lint
+```
 
-The six required groups for MVP-02 are legal/corporate, financial/tax, commercial/operations, technology/IP, human resources, and Q&A tracker. A folder does not implement the future Q&A workflow. No matching, Tech DD automation, NDA/signature, buyer permissions or deal approvals are added to this increment.
+Các lệnh trên đã pass sau khi thêm prep package fee, Indicative LOI trước VDR và Definitive Offer.
