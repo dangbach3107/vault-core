@@ -767,8 +767,8 @@
   background: #fbfcf9;
 }
 .differentiator-card.is-live {
-  border-color: #ac2f2f;
-  background: #fff6f5;
+  border-color: #bad6b1;
+  background: #eaf4e5;
 }
 .differentiator-card .differentiator-index {
   display: inline-grid;
@@ -783,7 +783,7 @@
   margin-bottom: 10px;
 }
 .differentiator-card.is-live .differentiator-index {
-  background: #ac2f2f;
+  background: #2f6b3f;
 }
 .differentiator-card h3 {
   margin: 0 0 6px;
