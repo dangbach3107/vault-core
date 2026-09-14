@@ -1,24 +1,80 @@
-# VAULT development roadmap
+# Lộ trình — hai người, khối lượng gần bằng nhau
 
-These are proposed small phases with evidence-based exits, not calendar promises. They implement assumption A-02 from [PROJECT.md](PROJECT.md). The source's months/budgets and business gates are not approved project milestones here.
+Cập nhật **2026-09-13**. **Chưa được phép code** cho đến khi người dùng bảo làm.
 
-| Phase | Work and requirement coverage | Dependencies | Completion criteria | Current status |
-| --- | --- | --- | --- | --- |
-| P0: planning setup | Inspect sources/repository; create project, requirements, roadmap, state, instructions and planning skill | Available sources; A-01 recorded | Seven requested files exist; links/skill structure reviewed; discrepancies and runtime limits recorded; existing code and sources preserved | Complete: documentation only |
-| P0a: architecture planning | Add stack, architecture, conventions and component instructions; define ENG-01–ENG-03 | P0; user selects D-11/D-12 | User selections recorded; current/target layouts and shared API contract distinguished; document links and preservation checked | Complete: documentation only; no scaffold |
-| P1: baseline and policy decisions | Establish a runnable local baseline; decide fact statuses (D-01), disclosure/approval rules (D-02/D-05), owners/thresholds (D-10); draft build/buy table (V1-12) | P0 | Startup and existing test outcomes recorded; gaps distinguished from regressions; decision records have rationale/owner; unresolved choices explicitly gate dependent work | In progress: environment/baseline verified; policy work remains |
-| P1a: connectivity scaffold | User-authorized separate health API and React page, environment templates, contract generation and Windows checks | P0a and D-11/D-12; no business-policy decision required | Backend/component/browser checks pass; real frontend-to-backend request demonstrated; Windows commands and limitations recorded; legacy code preserved | Complete for health-only scope |
-| P2: intake and profile dry run | Buyer brief, seller intake, fact register, teaser/profile, gap list, DD scope and manual fit score (V1-01–V1-05) | P1 decisions on data/review rules | A synthetic case produces all outputs; missing/conflicting facts stay visible; teaser reviewed for identity leakage; qualification and seller release reviews recorded | Partial technical evidence from P2a; broader operational outputs not complete |
-| P2a: internal company/Trust Profile MVP | Latest user priority 1; MVP-01, subset of V1-02–V1-04 | D-11/D-12; three labels explicitly selected in latest request; synthetic-only preview assumptions A-03/A-04 | PostgreSQL create/edit/list/detail; validation/evidence/stale-edit checks; backend anonymous allowlist; all three preview tabs; UI loading/error/success; component/API/browser evidence | Complete for internal synthetic profile scope; no external disclosure acceptance |
-| P3a: data-room MVP | Latest user priority 2; MVP-02, subset of V1-08 | P2a identity; D-04 user-approved local synthetic files | Company/deal room list, six categories, upload/list/preview/version history, validation, durable storage and browser tests | Complete for local synthetic scope; broader P3 access/provider controls remain unfinished |
-| P3: access design and provider sandbox | Permission matrix, NDA process, VDR provider/control evaluation (V1-06–V1-09) | P1 approval/owner decisions; settle D-03/D-04/D-09; P2 supplies synthetic fixtures | Signed-off matrix; synthetic sandbox demonstrates allowed/denied access, MFA, download separation, logs, versioning, expiry/revocation and deal stop; limitations accepted; no claims based only on vendor names | Not started |
-| P4: Tech DD playbook and report | Six-axis checklist, evidence register, report and remediation worksheet (V1-10–V1-11) | P1 owners; P2 scope fixture; resolve D-06/D-07 | One scoped exercise produces evidence-backed findings, severity, effort/cost assumptions, reviewed commercial treatment and limitations; report signatory defined | Not started |
-| P5: full workflow rehearsal | Connect reviewed outputs and run intake through deal stop (V1-12 and all V1 criteria) | P2, P3 and P4 complete | Requirement-by-requirement evidence reviewed; access failures and disclosure defects resolved; remaining limits documented; owner explicitly accepts pilot readiness | Not started |
-| P6: targeted automation, optional | Select justified pieces of F-01–F-03; apply ENG-01–ENG-03 | P5 evidence, stable process, provider contracts/architecture and explicit scope choice | Chosen automation passes its agreed acceptance checks and preserves the manual controls; other candidates stay deferred | Deferred |
-| P7: matching at scale, optional | Evaluate F-04 | Historical outcomes, stable fit criteria, agreed evaluation targets and business case | Reviewed evaluation supports adoption and human oversight; no automatic promotion from a demo | Deferred |
+Hai cụm **độc lập**: không chung bảng, route, thư mục UI; không lần lượt sửa cùng `Workspace.tsx` / cùng file Alembic / `openapi.json`. Mỗi người demo **sản phẩm của mình** (tự seed). Nối 15 bước là PR **sau**.
 
-P3 and P4 can proceed independently once their stated decisions are resolved. Finishing a document does not finish the corresponding operational requirement. Before extending application code, select one bounded task tied to a requirement and state its expected evidence.
+**Chia 8 / 7** (Work-flow 15 bước):
 
-The latest user explicitly brought forward P2a and P3a as a bounded two-part MVP. Existing legacy business code remains unmounted. The broader portal, matching, Tech DD, buyer permissions and approvals are not included. P2a does not resolve external release policy or complete all P2/V1 criteria.
+| | **Người A — Mở lớp** | **Người B — VDR & đóng** |
+| --- | --- | --- |
+| Bước | **1–8** | **9–15** |
+| Số nút/cổng chính | 8 (L1, match, NDA, L2, Legal ×3, duyệt file) | 7 (mở VDR, Tech DD, LOI, checklist, closed, phí, handoff) |
+| Nặng tương đương | Nhiều cổng nhỏ + 1 bảng grant file | Ít bước hơn nhưng nặng file/phí/findings |
 
-Next task: perform a user walkthrough of MVP-01/MVP-02 using synthetic files and record acceptance gaps. Both prioritized modules now have local technical evidence. Before real data or buyer sharing, resolve D-02/D-05/D-09/D-10 and demonstrate broader P3 controls. Do not start another business feature automatically. See [STATE.md](STATE.md).
+## Pha
+
+| Pha | Việc | Trạng thái |
+| --- | --- | --- |
+| P2a / P3a | Hồ sơ + phòng local | Xong |
+| **P3b-A** | Mở lớp (1–8) | Kế hoạch |
+| **P3b-B** | VDR & đóng (9–15) | Kế hoạch |
+
+## Ranh giới file
+
+| | **A — `#/disclosures` · nhãn Mở lớp** | **B — `#/closings` · nhãn VDR & đóng** |
+| --- | --- | --- |
+| API | `/api/v1/disclosures` | `/api/v1/closings` |
+| Alembic | **`0003_disclosures.py`** chỉ A | **`0004_closings.py`** chỉ B |
+| Backend | `api/disclosures.py` `schemas/disclosure.py` `db/disclosure.py` `services/disclosure.py` `tests/test_disclosures.py` | `api/closings.py` `schemas/closing.py` `db/closing.py` `services/closing.py` `tests/test_closings.py` |
+| Frontend | `features/disclosures/` `e2e/disclosures.spec.ts` | `features/closings/` `e2e/closings.spec.ts` |
+| `Workspace.tsx` | A thêm **một** mục `disclosures` | B thêm **một** mục `closings` |
+| Tab trên màn mình | Buyer · Seller · Admin · Legal | Admin · Tech DD · Buyer (LOI) · Legal (checklist) · Finance |
+| Seed | Tự tạo company (MVP-01) + disclosure | Tự tạo company + room + vài file (MVP-02) + closing **đã giả định L3 file đã duyệt** |
+
+Cấm import / chờ API người kia. OpenAPI: mỗi người chỉ thêm prefix của mình; đừng export cùng lúc.
+
+## Người A — bước 1–8 (tiến độ 8/8 mở lớp)
+
+| Bước | Tab | Nút | Lưu (của A) |
+| --- | --- | --- | --- |
+| 1 | Buyer | **Lưu buyer request** | 4 field |
+| 2 | Seller | **Tạo seller profile từ sample data** · **Approve L1 teaser** | `company_id`, `l1_approved` |
+| 3 | Admin | **Prepare match buyer–seller** | điểm, ≥3 lý do, ≥3 rủi ro |
+| 4 | Buyer | **Request identity / mở Layer 2** | `l2_requested` |
+| 5 | Admin | **Record signed NDA** | file + signer + hash + giờ |
+| 6 | Seller | **Approve buyer mở Layer 2** | `l2_approved` (cần 4+5) |
+| 7 | Legal | 3 nút L3 / cross-border / no-custody | 3 boolean |
+| 8 | Seller | Approve từng file L3 cho buyer | `disclosure_document_grants` |
+
+Không làm mở VDR, Tech DD, phí. Toast/khóa nút: REQUIREMENTS FLOW-01–08.
+
+**A xong:** e2e 1→8; nhảy bước 422; Buyer không marketplace.
+
+## Người B — bước 9–15 (tiến độ 7/7 đóng)
+
+Fixture mở đầu (text, **không** đọc bảng A): “Legal đã duyệt + đã có grant file”. Room/file do B tạo.
+
+| Bước | Tab | Nút | Lưu (của B) |
+| --- | --- | --- | --- |
+| 9 | Admin | **Open approved VDR files** | `vdr_opened`; chỉ file trong fixture grant của B |
+| 10 | Tech DD | Findings + **Tech DD reviewer sign-off** | `tech_dd_findings` + 4 lớp |
+| 11 | Buyer | **Submit LOI / indicative offer** | VND chuỗi, không ràng buộc |
+| 12 | Legal | **Complete LOI/closing checklist** | checklist jsonb |
+| 13 | Admin | **Mark SPA signed / deal closed** | `status=closed` (cần 11+12) |
+| 14 | Finance | **Record success fee** | 4 dòng; Tech DD / B2B không vào tổng VAULT |
+| 15 | Admin | **Post-deal handoff to Rikkei** | ghi chú; 7/7 |
+
+**B xong:** e2e 9→15; file ngoài grant 404; tổng phí đúng nhãn.
+
+## Nối sau (không nằm trong PR A hay B)
+
+`closings.disclosure_id` nullable khi cả hai đã merge.
+
+Cột đúng tên: [DATABASE.md](DATABASE.md) — A chỉ tạo bảng mục 2; B chỉ mục 3.
+
+## Việc nhỏ nhất khi được lệnh code
+
+- A: `0003` + `POST /disclosures` + trang 8 bước.  
+- B: `0004` + `POST /closings` (seed L3 xong) + trang 7 bước.  
+Song song ngày 1.

@@ -37,13 +37,13 @@ export default function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="brand" href="/" aria-label="VAULT trang chủ">
+        <a className="brand" href="#/companies" aria-label="VAULT trang chủ">
           <span className="brand-mark" aria-hidden="true">
             V
           </span>{' '}
           VAULT
         </a>
-        <span className="environment">Môi trường phát triển</span>
+        <span className="environment">Môi trường demo</span>
       </header>
       <section className="connection-card" aria-labelledby="page-title">
         <p className="eyebrow">BỘ KHUNG KỸ THUẬT · 01</p>

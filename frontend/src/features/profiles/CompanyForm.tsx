@@ -1,10 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Company, Fact, Profile } from '../../api/workspace'
 import { request } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import FactEditor from './FactEditor'
 import { blankFact, blankProfile, fields } from './fields'
+
+const groups = [
+  {
+    title: 'Thông tin doanh nghiệp',
+    keys: ['company_name', 'tax_id', 'founded_year', 'address', 'description'],
+  },
+  {
+    title: 'Ngành, khu vực, quy mô',
+    keys: ['sector', 'region', 'employees', 'customer_groups', 'technology'],
+  },
+  {
+    title: 'Nhu cầu giao dịch',
+    keys: ['deal_type', 'stake_percent', 'funds_destination', 'objectives'],
+  },
+  {
+    title: 'Cổ đông, người quyết định, phạm vi sử dụng',
+    keys: ['shareholders', 'decision_maker', 'permitted_use'],
+  },
+] as const
 
 export function EditCompany({ id }: { id: string }) {
   const result = useLoad<Company>(`/companies/${id}`)
@@ -21,6 +40,20 @@ export default function CompanyForm({ company }: { company?: Company }) {
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [dirty, setDirty] = useState(false)
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    addEventListener('beforeunload', warn)
+    return () => removeEventListener('beforeunload', warn)
+  }, [dirty])
+  function update(next: Profile) {
+    setDirty(true)
+    setProfile(next)
+  }
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setSaving(true)
@@ -37,6 +70,7 @@ export default function CompanyForm({ company }: { company?: Company }) {
           ),
         },
       )
+      setDirty(false)
       location.hash = `/companies/${saved.id}?saved=1`
     } catch (reason) {
       setError((reason as Error).message)
@@ -49,43 +83,47 @@ export default function CompanyForm({ company }: { company?: Company }) {
     key: 'revenue_vnd' | 'ebitda_vnd',
     value: Fact,
   ) {
-    setProfile({
+    update({
       ...profile,
       financials: profile.financials?.map((row, i) =>
         i === index ? { ...row, [key]: value } : row,
       ),
     })
   }
+  const cancelHref = company ? `#/companies/${company.id}` : '#/companies'
   return (
     <section>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">HỒ SƠ DOANH NGHIỆP</p>
-          <h1>{company ? 'Sửa hồ sơ' : 'Tạo hồ sơ mới'}</h1>
-        </div>
-        <a href={company ? `#/companies/${company.id}` : '#/companies'}>
-          Quay lại
-        </a>
-      </div>
-      <p className="muted">
+      <p className="lede">
         Lưu bản nháp chỉ cần tên doanh nghiệp. Ô trống được giữ là chưa cung
         cấp. Tiền tệ: VND; không tự làm tròn số tiền.
       </p>
       <form onSubmit={submit}>
-        <fieldset disabled={saving} className="form-grid panel">
-          <legend>Thông tin & nguồn dữ kiện</legend>
-          {fields.map((field) => (
-            <FactEditor
-              {...field}
-              key={field.key}
-              required={field.key === 'company_name'}
-              fact={(profile[field.key] || blankFact()) as Fact}
-              onChange={(fact) => setProfile({ ...profile, [field.key]: fact })}
-            />
-          ))}
-        </fieldset>
-        <fieldset disabled={saving} className="panel">
-          <legend>Tài chính — tối đa 3 năm</legend>
+        {groups.map((group) => (
+          <fieldset
+            key={group.title}
+            disabled={saving}
+            className="form-grid panel form-section"
+          >
+            <legend>{group.title}</legend>
+            {fields
+              .filter((field) =>
+                (group.keys as readonly string[]).includes(field.key),
+              )
+              .map((field) => (
+                <FactEditor
+                  {...field}
+                  key={field.key}
+                  required={field.key === 'company_name'}
+                  fact={(profile[field.key] || blankFact()) as Fact}
+                  onChange={(fact) =>
+                    update({ ...profile, [field.key]: fact })
+                  }
+                />
+              ))}
+          </fieldset>
+        ))}
+        <fieldset disabled={saving} className="panel form-section">
+          <legend>Tài chính — tối đa 3 năm (VND)</legend>
           {(profile.financials || []).map((row, index) => (
             <div className="financial-row" key={index}>
               <label>
@@ -97,7 +135,7 @@ export default function CompanyForm({ company }: { company?: Company }) {
                   max={new Date().getFullYear()}
                   value={row.year}
                   onChange={(e) =>
-                    setProfile({
+                    update({
                       ...profile,
                       financials: profile.financials?.map((item, i) =>
                         i === index
@@ -125,7 +163,7 @@ export default function CompanyForm({ company }: { company?: Company }) {
                 type="button"
                 className="secondary"
                 onClick={() =>
-                  setProfile({
+                  update({
                     ...profile,
                     financials: profile.financials?.filter(
                       (_, i) => i !== index,
@@ -142,7 +180,7 @@ export default function CompanyForm({ company }: { company?: Company }) {
               type="button"
               className="secondary"
               onClick={() =>
-                setProfile({
+                update({
                   ...profile,
                   financials: [
                     ...(profile.financials || []),
@@ -164,9 +202,12 @@ export default function CompanyForm({ company }: { company?: Company }) {
             {error}
           </div>
         )}
-        <div className="actions">
+        <div className="actions sticky-actions">
+          <a className="button-link ghost" href={cancelHref}>
+            Hủy
+          </a>
           <button type="submit" disabled={saving}>
-            {saving ? 'Đang lưu…' : 'Lưu hồ sơ'}
+            {saving ? 'Đang lưu…' : 'Lưu bản nháp'}
           </button>
           {saving && <span role="status">Đang lưu hồ sơ…</span>}
         </div>

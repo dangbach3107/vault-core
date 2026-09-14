@@ -21,7 +21,8 @@ function CompanyMatches({
       </p>
       {result.data.length === 0 && (
         <p>
-          Chưa có doanh nghiệp. <a href="#/companies/new">Tạo hồ sơ trước</a>.
+          Chưa có doanh nghiệp.{' '}
+          <a href="#/companies/new">Thêm doanh nghiệp trước</a>.
         </p>
       )}
       <div className="company-options">
@@ -89,47 +90,26 @@ function NewRoom({ company }: { company: Summary }) {
   )
 }
 
-function Rooms({ companyId, page }: { companyId?: string; page: number }) {
-  const result = useLoad<Room[]>(
-    `/rooms?offset=${page * 20}&limit=20${companyId ? `&company_id=${companyId}` : ''}`,
-  )
-  if (!result.data) return <LoadState {...result} />
-  return result.data.length === 0 ? (
-    <p className="empty panel">Chưa có phòng dữ liệu trên trang này.</p>
-  ) : (
-    <div className="record-list">
-      {result.data.map((room) => (
-        <a className="record panel" href={`#/rooms/${room.id}`} key={room.id}>
-          <div>
-            <p>{room.company_name}</p>
-            <h2>{room.title}</h2>
-            <p>Tạo {new Date(room.created_at).toLocaleDateString('vi-VN')}</p>
-          </div>
-          <span>Mở phòng →</span>
-        </a>
-      ))}
-    </div>
-  )
-}
-
 export default function RoomList({ companyId }: { companyId?: string }) {
   const [selected, setSelected] = useState<Summary | null>(null)
   const [creating, setCreating] = useState(false)
   const [page, setPage] = useState(0)
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
+  const result = useLoad<Room[]>(
+    `/rooms?offset=${page * 20}&limit=20${companyId ? `&company_id=${companyId}` : ''}`,
+  )
   return (
     <section>
       <div className="page-heading">
         <div>
           <p className="eyebrow">02 / VIRTUAL DATA ROOM</p>
-          <h1>Phòng dữ liệu</h1>
-          <p className="muted">
+          <p className="lede">
             Tài liệu theo thương vụ · Sáu nhóm thư mục · Giữ lại các phiên bản
           </p>
         </div>
         <button onClick={() => setCreating(!creating)}>
-          {creating ? 'Đóng form tạo phòng' : 'Thêm phòng dữ liệu'}
+          {creating ? 'Đóng form tạo phòng' : 'Tạo phòng dữ liệu'}
         </button>
       </div>
       {companyId && (
@@ -164,7 +144,42 @@ export default function RoomList({ companyId }: { companyId?: string }) {
           {selected && <NewRoom key={selected.id} company={selected} />}
         </>
       )}
-      <Rooms key={`${companyId}:${page}`} companyId={companyId} page={page} />
+      {!result.data ? (
+        <LoadState {...result} />
+      ) : result.data.length === 0 ? (
+        <p className="empty panel">Chưa có phòng dữ liệu trên trang này.</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Tên phòng / giao dịch</th>
+                <th>Doanh nghiệp</th>
+                <th>Ngày tạo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.data.map((room) => (
+                <tr key={room.id}>
+                  <td>
+                    <strong>{room.title}</strong>
+                  </td>
+                  <td>{room.company_name}</td>
+                  <td>
+                    {new Date(room.created_at).toLocaleDateString('vi-VN')}
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      <a href={`#/rooms/${room.id}`}>Mở phòng</a>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="actions">
         <button
           className="secondary"

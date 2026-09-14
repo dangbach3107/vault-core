@@ -16,7 +16,7 @@ test('room folders, upload, preview and immutable version history', async ({
   expect(created.status()).toBe(201)
   await page.goto('/#/rooms')
   await page
-    .getByRole('button', { name: 'Thêm phòng dữ liệu', exact: true })
+    .getByRole('button', { name: 'Tạo phòng dữ liệu', exact: true })
     .click()
   await page.getByLabel('Tìm doanh nghiệp để tạo phòng').fill(name)
   await page

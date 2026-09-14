@@ -39,7 +39,6 @@ export default function DocumentPage({
   }
   return (
     <section>
-      <a href={`#/rooms/${roomId}`}>← Về phòng dữ liệu</a>
       <div className="page-heading">
         <div>
           <p className="eyebrow">{roomResult.data.title}</p>
@@ -47,6 +46,7 @@ export default function DocumentPage({
           <p className="muted">
             Phiên bản mới nhất: {document.current_version}
           </p>
+          <a href={`#/rooms/${roomId}`}>Về phòng dữ liệu</a>
         </div>
         <button onClick={() => setEditing(!editing)}>
           {editing ? 'Đóng form phiên bản' : 'Thêm phiên bản'}
