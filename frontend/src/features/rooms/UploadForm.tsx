@@ -21,6 +21,7 @@ export default function UploadForm({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [fileKey, setFileKey] = useState(0)
+  const [over, setOver] = useState(false)
   async function upload(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
@@ -91,16 +92,39 @@ export default function UploadForm({
             </label>
           </>
         )}
-        <label>
-          {document ? 'File phiên bản mới' : 'Chọn file'}
-          <input
-            key={fileKey}
-            type="file"
-            accept={room.allowed_extensions.join(',')}
-            required
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-        </label>
+        <div className="field">
+          <label htmlFor="upload-file">
+            {document ? 'File phiên bản mới' : 'Chọn file'}
+          </label>
+          <div
+            className={over ? 'dropzone over' : 'dropzone'}
+            onDragOver={(e) => {
+              e.preventDefault()
+              setOver(true)
+            }}
+            onDragLeave={() => setOver(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setOver(false)
+              const dropped = e.dataTransfer.files[0]
+              if (dropped) setFile(dropped)
+            }}
+          >
+            <p>
+              {file
+                ? `${file.name} · ${(file.size / 1024).toFixed(1)} KB`
+                : 'Kéo thả file vào đây hoặc chọn từ máy'}
+            </p>
+            <input
+              id="upload-file"
+              key={fileKey}
+              type="file"
+              accept={room.allowed_extensions.join(',')}
+              required
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </div>
+        </div>
         <label>
           Ghi chú phiên bản
           <input

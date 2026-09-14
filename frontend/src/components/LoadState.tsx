@@ -11,6 +11,8 @@ export function LoadState({
       <button onClick={retry}>Thử lại</button>
     </div>
   ) : (
-    <p role="status">Đang tải dữ liệu…</p>
+    <p role="status" className="muted">
+      Đang tải dữ liệu…
+    </p>
   )
 }

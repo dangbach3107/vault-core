@@ -1,6 +1,6 @@
 # Working on VAULT Core
 
-VAULT has a separate FastAPI/React app with internal company/Trust Profiles and local data rooms, plus a preserved legacy demo. The user selected project-local files for the synthetic VDR MVP (D-04). Keep work within these two modules; do not add other business features or commit/push.
+VAULT: FastAPI/React — hồ sơ / Trust Profile và phòng dữ liệu local; demo cũ không mount. D-04: file local. **D-13 / P3b:** chia **8 / 7** — A `disclosures` (bước 1–8), B `closings` (bước 9–15). Chỉ code khi được bảo. Không chung bảng/route/UI. Tab ≠ RBAC. Xem `.planning/ROADMAP.md`.
 
 ## Read first
 
@@ -8,7 +8,8 @@ VAULT has a separate FastAPI/React app with internal company/Trust Profiles and 
 - [REQUIREMENTS](.planning/REQUIREMENTS.md): acceptance criteria
 - [ROADMAP](.planning/ROADMAP.md) and [STATE](.planning/STATE.md): sequence, actual progress and next task
 - [TECH_STACK](.planning/TECH_STACK.md): adopted tools and remaining choices
-- [ARCHITECTURE](.planning/ARCHITECTURE.md): boundaries, environment and API contract
+- [ARCHITECTURE](.planning/ARCHITECTURE.md): ranh giới, môi trường, hợp đồng API
+- [DATABASE](.planning/DATABASE.md): bảng, cột, JSONB, chia 0003/0004
 - [CONVENTIONS](.planning/CONVENTIONS.md): shared code/test/Git rules
 - [Backend instructions](backend/AGENTS.md) and [frontend instructions](frontend/AGENTS.md)
 - [README](README.md): Windows setup and run commands

@@ -15,12 +15,12 @@ test('keeps draft input after a save failure and allows retry', async () => {
   vi.stubGlobal('fetch', fetchMock)
   render(<CompanyForm />)
   await user.type(screen.getByLabelText('Tên doanh nghiệp *'), 'Công ty mẫu')
-  await user.click(screen.getByRole('button', { name: 'Lưu hồ sơ' }))
+  await user.click(screen.getByRole('button', { name: 'Lưu bản nháp' }))
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Database unavailable',
   )
   expect(screen.getByLabelText('Tên doanh nghiệp *')).toHaveValue('Công ty mẫu')
-  expect(screen.getByRole('button', { name: 'Lưu hồ sơ' })).toBeEnabled()
+  expect(screen.getByRole('button', { name: 'Lưu bản nháp' })).toBeEnabled()
   const body = JSON.parse(fetchMock.mock.calls[0][1].body)
   expect(body.company_name.value).toBe('Công ty mẫu')
   expect(body.financials[0].revenue_vnd.value).toBeNull()

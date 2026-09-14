@@ -7,7 +7,7 @@ test('create, persist, edit and preview a company through the real API and Postg
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/#/companies')
-  await page.getByRole('link', { name: 'Tạo hồ sơ', exact: true }).click()
+  await page.getByRole('link', { name: 'Thêm doanh nghiệp', exact: true }).click()
   await page.getByLabel('Tên doanh nghiệp *', { exact: true }).fill(name)
   await page
     .getByLabel('Mã số thuế', { exact: true })
@@ -20,13 +20,14 @@ test('create, persist, edit and preview a company through the real API and Postg
   await page
     .getByLabel('Doanh thu VND — dòng 1', { exact: true })
     .fill('25000000000.01')
-  await page.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click()
+  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click()
   await expect(
     page.getByRole('status').filter({ hasText: 'Đã lưu hồ sơ.' }),
   ).toBeVisible()
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Xem trước công bố' }).first().click()
   await page.getByRole('button', { name: 'Lớp 1 · Ẩn danh' }).click()
   await expect(page.getByText('20–dưới 50 tỷ', { exact: true })).toBeVisible()
   await expect(page.getByText(name, { exact: true })).toHaveCount(0)
@@ -34,11 +35,11 @@ test('create, persist, edit and preview a company through the real API and Postg
     page.getByText('123 Địa chỉ riêng tư', { exact: true }),
   ).toHaveCount(0)
   await expect(page.getByText('25000000000.01', { exact: true })).toHaveCount(0)
-  await page.getByRole('link', { name: 'Sửa hồ sơ' }).click()
+  await page.getByRole('link', { name: 'Chỉnh sửa' }).first().click()
   await page
     .getByLabel('Tên doanh nghiệp *', { exact: true })
     .fill(`${name} đã sửa`)
-  await page.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click()
+  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click()
   await expect(
     page.getByRole('heading', { name: `${name} đã sửa`, exact: true }),
   ).toBeVisible()
@@ -60,7 +61,7 @@ test('create, persist, edit and preview a company through the real API and Postg
     path: 'test-results/profile-mobile.png',
     fullPage: true,
   })
-  await page.getByRole('link', { name: 'Danh sách doanh nghiệp' }).click()
+  await page.getByRole('link', { name: 'Hồ sơ doanh nghiệp' }).first().click()
   await page.getByLabel('Tìm tên hoặc mã số thuế').fill(name)
   await page.getByRole('button', { name: 'Tìm kiếm' }).click()
   await expect(

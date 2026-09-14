@@ -1,0 +1,207 @@
+Bước 1 — Buyer tạo nhu cầu mua 
+
+Tab: Buyer 
+
+Chỉ cho người xem 4 trường Buyer Request. 
+
+Bấm Lưu buyer request. 
+
+Giải thích: VAULT bắt đầu từ nhu cầu thật của buyer, không bắt đầu bằng một kho hồ sơ đăng bán công khai. 
+
+Thông điệp chính: 
+
+Buyer demand là điểm khởi đầu. VAULT không phải marketplace đăng tin hàng loạt. 
+
+Bước 2 — Seller tạo hồ sơ doanh nghiệp 
+
+Tab: Seller 
+
+Chỉ cho người xem seller profile mẫu. 
+
+Bấm Tạo seller profile từ sample data. 
+
+Bấm Approve L1 teaser. 
+
+Giải thích: Seller kiểm soát những gì được đưa ra ngoài. Layer 1 là ẩn danh. 
+
+Thông điệp chính: 
+
+Seller không bị lộ danh tính ngay từ đầu. VAULT chỉ mở thông tin theo lớp. 
+
+Bước 3 — VAULT chuẩn bị match 
+
+Tab: VAULT Admin 
+
+Chỉ task list theo role. 
+
+Chỉ matching score và lý do match. 
+
+Bấm Prepare match buyer–seller. 
+
+Giải thích: matching có tiêu chí, có lý do, có risk list. 
+
+Thông điệp chính: 
+
+VAULT tạo một lời giới thiệu có kiểm soát, không gửi hồ sơ hàng loạt. 
+
+Bước 4 — Buyer yêu cầu mở danh tính 
+
+Tab: Buyer 
+
+Chỉ rằng Layer 1 đã mở. 
+
+Bấm Request identity / mở Layer 2\. 
+
+Giải thích: Buyer chỉ yêu cầu mở danh tính sau khi teaser ẩn danh đủ phù hợp. 
+
+Thông điệp chính: 
+
+Layer 2 chỉ mở khi có nhu cầu cụ thể, không mở tự động. 
+
+Bước 5 — VAULT ghi nhận NDA 
+
+Tab: VAULT Admin 
+
+Bấm Record signed NDA. 
+
+Giải thích: MVP hiện ghi nhận/upload signed NDA; e-sign integration là phase sau. 
+
+Thông điệp chính: 
+
+NDA là cổng kỹ thuật/nghiệp vụ trước khi mở thông tin định danh. 
+
+Bước 6 — Seller duyệt buyer mở Layer 2 
+
+Tab: Seller 
+
+Bấm Approve buyer mở Layer 2\. 
+
+Giải thích: Seller duyệt từng buyer. Không phải buyer nào có NDA cũng tự động xem doanh nghiệp. 
+
+Thông điệp chính: 
+
+Seller giữ quyền kiểm soát danh tính và thông tin định danh. 
+
+Bước 7 — Legal duyệt Layer 3 và cross-border data 
+
+Tab: Legal 
+
+Bấm Approve Layer 3 access. 
+
+Bấm Approve cross-border data access. 
+
+Bấm Confirm VAULT does not hold money/shares. 
+
+Giải thích: Legal xử lý các điểm rủi ro trước khi mở tài liệu nhạy cảm. 
+
+Thông điệp chính: 
+
+VAULT kiểm soát pháp lý và dữ liệu trước khi mở VDR. 
+
+Bước 8 — Seller duyệt file Layer 3 
+
+Tab: Seller 
+
+Bấm Approve từng file Layer 3 cho buyer. 
+
+Giải thích: Layer 3 không phải mở cả kho; mở theo file và theo buyer. 
+
+Thông điệp chính: 
+
+File nhạy cảm chỉ mở đúng người, đúng phạm vi, đúng thời điểm. 
+
+Bước 9 — VAULT mở VDR files 
+
+Tab: VAULT Admin 
+
+Bấm Open approved VDR files. 
+
+Giải thích: bản demo dùng local synthetic VDR. Production cần VDR/object storage thật, audit log, watermark, MFA, antivirus/file scan. 
+
+Thông điệp chính: MVP chứng minh flow; production sẽ thay local VDR bằng hạ tầng bảo mật phù hợp. 
+
+Bước 10 — Tech DD review và sign-off 
+
+Tab: Tech DD 
+
+Chỉ bảng findings. 
+
+Giải thích các remediation class: 
+
+Pre-closing must-fix. 
+
+6-month fix. 
+
+Defer. 
+
+Growth investment. 
+
+Bấm Tech DD reviewer sign-off. 
+
+Thông điệp chính: 
+
+Tech DD là khác biệt của VAULT/Rikkei: biến rủi ro công nghệ thành chi phí và tác động giao dịch. 
+
+Bước 11 — Buyer gửi LOI 
+
+Tab: Buyer 
+
+Bấm Submit LOI / indicative offer. 
+
+Giải thích: buyer không chỉ xem tài liệu; buyer chuyển thành hành động giao dịch cụ thể. 
+
+Thông điệp chính: 
+
+VAULT đẩy deal từ quan tâm sang cam kết giao dịch. 
+
+Bước 12 — Legal hoàn tất closing checklist 
+
+Tab: Legal 
+
+Bấm Complete LOI/closing checklist. 
+
+Giải thích: Legal vẫn đi cùng deal tới closing. MVP là checklist, chưa phải full legal document automation. 
+
+Thông điệp chính: 
+
+Closing không chỉ là thao tác thương mại; phải có checklist pháp lý. 
+
+Bước 13 — VAULT đánh dấu deal closed 
+
+Tab: VAULT Admin 
+
+Bấm Mark SPA signed / deal closed. 
+
+Giải thích: đây là trạng thái closing giả lập cho MVP. 
+
+Thông điệp chính: 
+
+VAULT quản trị deal tới trạng thái đóng thương vụ, không chỉ tới lúc mở VDR. 
+
+Bước 14 — Finance ghi nhận success fee 
+
+Tab: Finance 
+
+Chỉ các dòng phí: prep package, success fee, Tech DD, Build-to-Buy opportunity. 
+
+Bấm Record success fee. 
+
+Giải thích: app tracking actuals; Excel vẫn là model kế hoạch. 
+
+Thông điệp chính: 
+
+Finance nhìn được thương vụ chuyển thành phí thực tế. 
+
+Bước 15 — VAULT handoff sau giao dịch 
+
+Tab: VAULT Admin 
+
+Bấm Post-deal handoff to Rikkei. 
+
+Kiểm tra progress đạt 100%. 
+
+Kết luận demo. 
+
+Thông điệp chính: 
+
+Sau closing, VAULT còn tạo cơ hội triển khai công nghệ/hậu giao dịch cho hệ sinh thái Rikkei, nhưng không cộng trùng doanh thu nếu chưa có hợp đồng riêng..

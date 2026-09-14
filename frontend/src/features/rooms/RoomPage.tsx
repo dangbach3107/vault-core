@@ -4,6 +4,11 @@ import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
 
+function extOf(name: string) {
+  const i = name.lastIndexOf('.')
+  return i >= 0 ? name.slice(i + 1).toUpperCase() : '—'
+}
+
 export default function RoomPage({
   id,
   created,
@@ -13,6 +18,7 @@ export default function RoomPage({
 }) {
   const result = useLoad<RoomDetail>(`/rooms/${id}`)
   const [folder, setFolder] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
   const [message, setMessage] = useState(
     created ? 'Đã tạo phòng dữ liệu với sáu nhóm thư mục.' : '',
   )
@@ -22,6 +28,7 @@ export default function RoomPage({
       `Đã tải lên “${document.title}”, phiên bản ${document.current_version}.`,
     )
     setUploading(false)
+    setSelected(document.id)
     result.retry()
   }
   if (!result.data) return <LoadState {...result} />
@@ -29,13 +36,13 @@ export default function RoomPage({
   const documents = room.documents.filter(
     (document) => !folder || document.folder === folder,
   )
+  const current = documents.find((row) => row.id === selected) || documents[0]
   return (
     <section>
-      <a href="#/rooms">← Danh sách phòng dữ liệu</a>
       <div className="page-heading">
         <div>
           <p className="eyebrow">THƯƠNG VỤ · PHÒNG DỮ LIỆU NỘI BỘ</p>
-          <h1>{room.title}</h1>
+          <h2>{room.title}</h2>
           <a href={`#/companies/${room.company_id}`}>{room.company_name}</a>
         </div>
         <button onClick={() => setUploading(!uploading)}>
@@ -48,7 +55,7 @@ export default function RoomPage({
         </p>
       )}
       {uploading && <UploadForm room={room} onSaved={onSaved} />}
-      <div className="room-layout">
+      <div className="room-layout three">
         <aside className="folder-list" aria-label="Nhóm thư mục">
           <button
             className={!folder ? '' : 'secondary'}
@@ -77,25 +84,65 @@ export default function RoomPage({
           {documents.length === 0 ? (
             <p className="empty panel">Chưa có tài liệu trong nhóm này.</p>
           ) : (
-            documents.map((document) => (
-              <a
-                className="record panel"
-                href={`#/rooms/${id}/documents/${document.id}`}
-                key={document.id}
-              >
-                <div>
-                  <h2>{document.title}</h2>
-                  <p>{document.latest.filename}</p>
-                  <p>
-                    Phiên bản {document.current_version} ·{' '}
-                    {(document.latest.size_bytes / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <span>Xem & phiên bản →</span>
-              </a>
-            ))
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tên</th>
+                    <th>Định dạng</th>
+                    <th>Dung lượng</th>
+                    <th>Phiên bản</th>
+                    <th>Tải lên</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map((document) => (
+                    <tr key={document.id}>
+                      <td>
+                        <a
+                          href={`#/rooms/${id}/documents/${document.id}`}
+                          onClick={() => setSelected(document.id)}
+                        >
+                          {document.title}
+                        </a>
+                      </td>
+                      <td>{extOf(document.latest.filename)}</td>
+                      <td>
+                        {(document.latest.size_bytes / 1024).toFixed(1)} KB
+                      </td>
+                      <td>{document.current_version}</td>
+                      <td>
+                        {new Date(
+                          document.latest.uploaded_at,
+                        ).toLocaleString('vi-VN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
+        <aside className="panel">
+          {current ? (
+            <>
+              <h2>{current.title}</h2>
+              <p className="muted">{current.latest.filename}</p>
+              <p>
+                Phiên bản {current.current_version} ·{' '}
+                {(current.latest.size_bytes / 1024).toFixed(1)} KB
+              </p>
+              <a
+                className="button-link"
+                href={`#/rooms/${id}/documents/${current.id}`}
+              >
+                Xem & phiên bản
+              </a>
+            </>
+          ) : (
+            <p className="muted">Chọn một tài liệu để xem tóm tắt.</p>
+          )}
+        </aside>
       </div>
     </section>
   )
