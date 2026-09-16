@@ -1,17 +1,14 @@
+import { apiBase, demoHeaders } from './config'
 import type { operations } from './generated/schema'
 
 export type HealthResponse =
   operations['get_health']['responses'][200]['content']['application/json']
 
 export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
-  const base = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(
-    /\/$/,
-    '',
-  )
   const timeout = AbortSignal.timeout(5000)
-  const response = await fetch(`${base}/health`, {
+  const response = await fetch(`${apiBase}/health`, {
     signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    headers: { Accept: 'application/json' },
+    headers: { Accept: 'application/json', ...demoHeaders() },
     cache: 'no-store',
   })
   if (!response.ok) throw new Error(`API trả về lỗi HTTP ${response.status}.`)

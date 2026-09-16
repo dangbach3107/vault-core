@@ -248,6 +248,7 @@ export interface components {
             region?: components["schemas"]["Fact_Region_"];
             sector?: components["schemas"]["Fact_Sector_"];
             shareholders?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
+            source_url?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____"];
             stake_percent?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Input"];
             tax_id?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_3___MaxLen_max_length_30_____"];
             technology?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
@@ -270,6 +271,7 @@ export interface components {
             region?: components["schemas"]["Fact_Region_"];
             sector?: components["schemas"]["Fact_Sector_"];
             shareholders?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
+            source_url?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____"];
             stake_percent?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Output"];
             tax_id?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_3___MaxLen_max_length_30_____"];
             technology?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
@@ -699,6 +701,39 @@ export interface components {
         };
         /** Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=3), MaxLen(max_length=30)])]] */
         Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_3___MaxLen_max_length_30_____: {
+            /**
+             * Entered By
+             * @default
+             */
+            entered_by: string;
+            /** @default NONE */
+            issue: components["schemas"]["Issue"];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Reviewed By
+             * @default
+             */
+            reviewed_by: string;
+            /** Reviewed On */
+            reviewed_on?: string | null;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /** Source Date */
+            source_date?: string | null;
+            /** Value */
+            value?: string | null;
+            /** @default SELF_DECLARED */
+            verification: components["schemas"]["Verification"];
+        };
+        /** Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=8), MaxLen(max_length=2000), _PydanticGeneralMetadata(pattern='https?://\\S+')])]] */
+        Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____: {
             /**
              * Entered By
              * @default
@@ -1481,7 +1516,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1568,7 +1603,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1653,7 +1688,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1742,7 +1777,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1828,7 +1863,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1918,7 +1953,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -2012,7 +2047,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;

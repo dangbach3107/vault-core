@@ -12,6 +12,10 @@ def build_engine(settings: Settings) -> Engine:
     url = settings.database_url.get_secret_value()
     if not url:
         raise ValueError("Configure DATABASE_URL before using database tooling.")
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url.removeprefix("postgresql://")
+    elif url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url.removeprefix("postgres://")
     if not url.startswith("postgresql+psycopg://"):
         raise ValueError("DATABASE_URL must use the postgresql+psycopg driver.")
     return create_engine(url, pool_pre_ping=True)

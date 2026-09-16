@@ -79,3 +79,24 @@ Nếu cần demo backend thật qua internet, cần deploy thêm:
 - Postgres managed;
 - object storage/VDR provider;
 - cấu hình CORS/auth/secrets.
+
+## 6. Boundary cho hosted full-stack demo
+
+Hosted demo vẫn là synthetic/internal preview, không phải production VDR. Khác với Vercel-only, mode này có thêm:
+
+```text
+Vercel static frontend
+  → public FastAPI backend trên Railway hoặc Render
+  → managed PostgreSQL
+  → persistent demo upload directory
+```
+
+Railway target dùng `Dockerfile.railway`, `railway.json`, Railway PostgreSQL và Railway Volume mount `/data`.
+
+Các route hồ sơ/phòng dữ liệu vẫn bị chặn nếu `INTERNAL_PREVIEW_ENABLED=false`. Khi bật hosted demo, phải cấu hình explicit allowlist:
+
+- `ALLOWED_ORIGINS`: frontend origin được phép gọi CORS.
+- `ALLOWED_HOSTS`: custom/backend hostname được phép phục vụ API preview; Railway-provided domain được đọc từ `RAILWAY_PUBLIC_DOMAIN`.
+- `DEMO_PASSWORD`: tùy chọn shared password nhẹ cho demo; không thay thế auth/RBAC.
+
+Health check vẫn là liveness, không chứng minh DB/storage production-ready.

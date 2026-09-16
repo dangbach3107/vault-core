@@ -209,3 +209,162 @@ Nguồn gốc: [hướng dẫn hành động Tech](VAULT_text/14_TECH_FOCUS_TRUS
 - Nếu báo không đọc/lưu được dữ liệu, mở Docker Desktop, chạy script database rồi Alembic `upgrade head`. Chỉ kiểm tra URL trong `.env` trên máy bạn, không chia sẻ mật khẩu trong log hoặc ảnh chụp.
 
 Bước tiếp theo: thử hai luồng bằng dữ liệu giả lập theo hướng dẫn trên và ghi lại điểm cần chỉnh. Trước khi dùng tài liệu thật hoặc chia sẻ cho buyer, cần chốt đăng nhập, NDA, phê duyệt, phân quyền và phương án VDR vận hành. Chưa commit hoặc push.
+
+## Deploy full-stack demo để link public test giống local
+
+Mục tiêu của mode này: giữ frontend trên Vercel nhưng thêm backend public + PostgreSQL + persistent upload directory để đồng nghiệp test được các màn **Doanh nghiệp**, **Phòng dữ liệu**, upload/preview file và API health giống local ở mức MVP synthetic.
+
+> Lưu ý: đây vẫn là hosted demo dùng dữ liệu giả lập, chưa phải production cho dữ liệu thật. Chưa có auth/RBAC/MFA/audit/watermark/antivirus production-grade.
+
+### Phương án Railway được chọn
+
+```text
+Vercel frontend
+  -> Railway FastAPI backend
+  -> Railway PostgreSQL
+  -> Railway Volume /data/vault-uploads
+```
+
+Repo có sẵn cấu hình Railway:
+
+- `Dockerfile.railway`: build backend FastAPI từ `backend/requirements.txt`.
+- `railway.json`: dùng Dockerfile, chạy Alembic ở pre-deploy, start Uvicorn bằng `$PORT`, healthcheck `/api/v1/health`.
+- `.dockerignore`: loại node_modules, dist, .env, .tmp, .data khỏi Docker context.
+
+Các bước trên Railway:
+
+1. Tạo Railway project mới.
+2. Add PostgreSQL service.
+3. Add backend service từ repo hoặc deploy bằng CLI `railway up` tại thư mục `vault-core`.
+4. Generate public domain cho backend service trong Settings → Networking.
+5. Add volume cho backend, mount path `/data`.
+6. Set variables cho backend service:
+
+```text
+PROJECT_NAME=VAULT Core
+VERSION=0.1.0
+API_V1_STR=/api/v1
+ENVIRONMENT=hosted-demo
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+INTERNAL_PREVIEW_ENABLED=true
+UPLOAD_DIRECTORY=/data/vault-uploads
+MAX_UPLOAD_BYTES=10485760
+ALLOWED_ORIGINS=https://frontend-xi-eosin-36.vercel.app
+ALLOWED_HOSTS=
+DEMO_PASSWORD=<optional shared demo password>
+```
+
+Nếu service PostgreSQL trên Railway không tên là `Postgres`, đổi reference `DATABASE_URL=${{Postgres.DATABASE_URL}}` theo đúng tên service trên canvas, hoặc paste database URL trực tiếp. Backend tự nhận `postgres://...`, `postgresql://...` và đổi sang driver `postgresql+psycopg://...`. Backend cũng tự đọc `RAILWAY_PUBLIC_DOMAIN` để allow host Railway-provided domain; chỉ cần `ALLOWED_HOSTS` khi dùng custom domain hoặc domain ngoài Railway.
+
+Sau khi backend Railway lên, mở:
+
+```text
+https://<railway-backend-domain>/api/v1/health
+```
+
+Kỳ vọng `status=ok`, `scope=liveness`.
+
+### Cấu hình Vercel frontend gọi Railway backend
+
+Trong Vercel project frontend, đặt environment variable production:
+
+```text
+VITE_API_BASE_URL=https://<railway-backend-domain>/api/v1
+```
+
+Redeploy production. Khi biến này tồn tại, Vercel sẽ không chặn các route Company/Room nữa và frontend sẽ gọi backend Railway public.
+
+Smoke test:
+
+```text
+https://frontend-xi-eosin-36.vercel.app/#/health
+https://frontend-xi-eosin-36.vercel.app/#/companies
+https://frontend-xi-eosin-36.vercel.app/#/rooms
+https://frontend-xi-eosin-36.vercel.app/#/investor-mvp
+```
+
+Tạo hồ sơ giả lập, tạo phòng dữ liệu, upload file PNG/PDF/TXT nhỏ, reload trang và kiểm tra dữ liệu/file còn nguyên. Nếu upload xong nhưng mất file sau restart, kiểm tra Railway volume mount path `/data` và `UPLOAD_DIRECTORY=/data/vault-uploads`.
+
+### Phương án Render/Neon thay thế
+
+```text
+Vercel frontend
+  -> Render FastAPI backend
+  -> Neon Postgres
+  -> Render persistent disk /var/data/vault-uploads
+```
+
+### 1. Tạo Neon Postgres
+
+Tạo database Neon mới và lấy connection string. Có thể dùng dạng Neon mặc định:
+
+```text
+postgresql://USER:PASSWORD@HOST/DB?sslmode=require
+```
+
+Backend sẽ tự đổi sang driver `postgresql+psycopg://...`, không cần sửa tay trong secret nếu provider đưa `postgresql://`.
+
+### 2. Tạo Render web service
+
+Có thể dùng `render.yaml` ở repo root hoặc nhập thủ công trên UI.
+
+Thiết lập chính:
+
+```text
+Runtime: Python
+Build command: pip install -r backend/requirements.txt && python -m alembic -c backend/alembic.ini upgrade head
+Start command: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+Health check path: /api/v1/health
+Persistent disk mount path: /var/data
+```
+
+Environment variables trên Render:
+
+```text
+PROJECT_NAME=VAULT Core
+VERSION=0.1.0
+API_V1_STR=/api/v1
+ENVIRONMENT=hosted-demo
+DATABASE_URL=<Neon connection string>
+INTERNAL_PREVIEW_ENABLED=true
+UPLOAD_DIRECTORY=/var/data/vault-uploads
+MAX_UPLOAD_BYTES=10485760
+ALLOWED_HOSTS=<render-backend-hostname, ví dụ vault-core-api.onrender.com>
+ALLOWED_ORIGINS=https://frontend-xi-eosin-36.vercel.app
+DEMO_PASSWORD=<optional shared demo password>
+```
+
+Nếu đặt `DEMO_PASSWORD`, mở frontend sẽ có mục **Demo password** để nhập password trên trình duyệt. Đây chỉ là demo gate nhẹ, không phải auth thật.
+
+### 3. Cấu hình Vercel frontend gọi backend
+
+Trong Vercel project frontend, đặt environment variable:
+
+```text
+VITE_API_BASE_URL=https://<render-backend-hostname>/api/v1
+```
+
+Sau đó redeploy production. Khi biến này tồn tại, Vercel sẽ không chặn các route Company/Room nữa và frontend sẽ gọi backend public.
+
+### 4. Smoke test sau deploy
+
+1. Mở backend health:
+
+```text
+https://<render-backend-hostname>/api/v1/health
+```
+
+Kỳ vọng `status=ok`, `scope=liveness`.
+
+2. Mở frontend:
+
+```text
+https://frontend-xi-eosin-36.vercel.app/#/health
+https://frontend-xi-eosin-36.vercel.app/#/companies
+https://frontend-xi-eosin-36.vercel.app/#/rooms
+https://frontend-xi-eosin-36.vercel.app/#/investor-mvp
+```
+
+3. Tạo hồ sơ giả lập, tạo phòng dữ liệu, upload file PNG/PDF/TXT nhỏ, reload trang và kiểm tra dữ liệu/file còn nguyên.
+
+Nếu health chạy nhưng hồ sơ/phòng dữ liệu lỗi 403, kiểm tra lại `ALLOWED_HOSTS` và `ALLOWED_ORIGINS`. Nếu lỗi 503 database, kiểm tra `DATABASE_URL` và migration trong Render build log. Nếu upload xong nhưng mất file sau restart, kiểm tra persistent disk/mount path và `UPLOAD_DIRECTORY`.

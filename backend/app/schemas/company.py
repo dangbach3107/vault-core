@@ -81,6 +81,7 @@ class FinancialYear(StrictModel):
 
 class CompanyInput(StrictModel):
     company_name: Fact[Annotated[str, Field(min_length=1, max_length=200)]]
+    source_url: Fact[Annotated[str, Field(min_length=8, max_length=2000, pattern=r"https?://\S+")]] = Field(default_factory=Fact)
     tax_id: Fact[Annotated[str, Field(min_length=3, max_length=30)]] = Field(default_factory=Fact)
     founded_year: Fact[Annotated[int, Field(ge=1800, le=2100)]] = Field(default_factory=Fact)
     sector: Fact[Sector] = Field(default_factory=Fact)

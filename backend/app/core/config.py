@@ -22,3 +22,32 @@ class Settings(BaseSettings):
     internal_preview_enabled: bool = False
     upload_directory: Path = REPOSITORY_ROOT / ".data" / "uploads"
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=50 * 1024 * 1024)
+
+    # Deployment/demo controls. Keep empty for local-only behavior.
+    # Comma-separated values; examples:
+    # ALLOWED_HOSTS=vault-core-api.onrender.com
+    # ALLOWED_ORIGINS=https://frontend-xi-eosin-36.vercel.app
+    allowed_hosts: str = ""
+    allowed_origins: str = ""
+    # Railway injects this after a public domain is generated. Include it in
+    # the backend host allowlist so ALLOWED_HOSTS is only needed for custom
+    # domains or non-Railway hosts.
+    railway_public_domain: str = ""
+    # Optional shared demo password. This is only a light demo gate, not real auth/RBAC.
+    demo_password: SecretStr = SecretStr("")
+
+    def allowed_hostnames(self) -> set[str]:
+        return {
+            "127.0.0.1",
+            "localhost",
+            "testserver",
+            *csv_values(self.allowed_hosts),
+            *csv_values(self.railway_public_domain),
+        }
+
+    def allowed_origin_values(self) -> set[str]:
+        return csv_values(self.allowed_origins)
+
+
+def csv_values(value: str) -> set[str]:
+    return {item.strip().rstrip("/") for item in value.split(",") if item.strip()}

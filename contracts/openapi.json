@@ -200,6 +200,9 @@
           "shareholders": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
           },
+          "source_url": {
+            "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____"
+          },
           "stake_percent": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Input"
           },
@@ -268,6 +271,9 @@
           },
           "shareholders": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
+          },
+          "source_url": {
+            "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____"
           },
           "stake_percent": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Output"
@@ -1323,6 +1329,83 @@
           }
         },
         "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=3), MaxLen(max_length=30)])]]",
+        "type": "object"
+      },
+      "Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_8___MaxLen_max_length_2000____PydanticGeneralMetadata_pattern__https_____": {
+        "additionalProperties": false,
+        "properties": {
+          "entered_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Entered By",
+            "type": "string"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/Issue",
+            "default": "NONE"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Reviewed By",
+            "type": "string"
+          },
+          "reviewed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed On"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "source_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Date"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 8,
+                "pattern": "https?://\\S+",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "default": "SELF_DECLARED"
+          }
+        },
+        "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=8), MaxLen(max_length=2000), _PydanticGeneralMetadata(pattern='https?://\\\\S+')])]]",
         "type": "object"
       },
       "Fact_DealType_": {
@@ -2656,7 +2739,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -2755,7 +2838,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -2858,7 +2941,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -2971,7 +3054,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -3084,7 +3167,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -3207,7 +3290,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {
@@ -3371,7 +3454,7 @@
                 }
               }
             },
-            "description": "Request Entity Too Large"
+            "description": "Content Too Large"
           },
           "415": {
             "content": {

@@ -1,0 +1,14 @@
+.git
+.venv
+.pytest_cache
+**/__pycache__
+*.pyc
+.DS_Store
+.env
+.tmp
+.data
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/.vercel
+node_modules

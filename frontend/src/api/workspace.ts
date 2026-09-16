@@ -1,3 +1,5 @@
+import { apiBase, demoHeaders } from './config'
+export { apiBase } from './config'
 import type { components } from './generated/schema'
 
 export type Company = components['schemas']['CompanyResponse']
@@ -16,11 +18,6 @@ export type Fact = Omit<Profile['company_name'], 'value'> & {
 }
 export type FieldName = Exclude<keyof Profile, 'financials'>
 
-export const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(
-  /\/$/,
-  '',
-)
-
 export async function getFile(
   path: string,
   signal: AbortSignal,
@@ -29,6 +26,7 @@ export async function getFile(
   try {
     response = await fetch(`${apiBase}${path}`, {
       signal: AbortSignal.any([signal, AbortSignal.timeout(30000)]),
+      headers: demoHeaders(),
       cache: 'no-store',
     })
   } catch {
@@ -60,6 +58,7 @@ export async function request<T>(
         : AbortSignal.timeout(30000),
       headers: {
         Accept: 'application/json',
+        ...demoHeaders(),
         ...(init.body && !(init.body instanceof FormData)
           ? { 'Content-Type': 'application/json' }
           : {}),
@@ -85,6 +84,12 @@ export async function request<T>(
         .join('; ')
     }
     throw new Error(message)
+  }
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      'Màn này cần backend API đang chạy. Bản Vercel hiện chỉ dùng để demo Investor MVP bằng dữ liệu giả lập.',
+    )
   }
   return response.json() as Promise<T>
 }
