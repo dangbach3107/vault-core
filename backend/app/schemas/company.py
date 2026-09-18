@@ -133,6 +133,14 @@ class CompanySummary(StrictModel):
     name: str
     tax_id: str | None
     updated_at: datetime
+    sector: Sector | None = None
+    region: Region | None = None
+    revenue_band: str | None = None
+    employee_band: str | None = None
+    deal_type: DealType | None = None
+    stake_percent: Decimal | None = None
+    verified_facts_count: int = 0
+    total_facts_count: int = 0
 
 
 class AnonymousPreview(StrictModel):

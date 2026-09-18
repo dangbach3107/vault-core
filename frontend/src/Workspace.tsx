@@ -6,6 +6,7 @@ import CompanyDetail from './features/profiles/CompanyDetail'
 import RoomList from './features/rooms/RoomList'
 import RoomPage from './features/rooms/RoomPage'
 import DocumentPage from './features/rooms/DocumentPage'
+import InvestorMvp from './features/investor-mvp/InvestorMvp'
 import './workspace.css'
 
 function pathOf(hash: string) {
@@ -13,6 +14,7 @@ function pathOf(hash: string) {
 }
 
 function crumb(path: string) {
+  if (path === '/investor-mvp') return [['Thương vụ A–Z', '']]
   if (path === '/companies/new')
     return [
       ['Hồ sơ doanh nghiệp', '#/companies'],
@@ -43,6 +45,7 @@ function crumb(path: string) {
 }
 
 function titleOf(path: string) {
+  if (path === '/investor-mvp') return 'Thương vụ A–Z (Demo)'
   if (path === '/companies/new') return 'Tạo hồ sơ'
   if (path.endsWith('/edit')) return 'Chỉnh sửa hồ sơ'
   if (path.startsWith('/companies/') && path !== '/companies')
@@ -70,7 +73,8 @@ export default function Workspace() {
       </div>
     )
   let screen = <CompanyList />
-  if (path === '/companies/new') screen = <CompanyForm />
+  if (path === '/investor-mvp') screen = <InvestorMvp />
+  else if (path === '/companies/new') screen = <CompanyForm />
   else if (path === '/rooms')
     screen = <RoomList companyId={params.get('company') || undefined} />
   else if (parts[0] === 'rooms' && parts[1])
@@ -94,8 +98,9 @@ export default function Workspace() {
       </p>
     )
   const crumbs = crumb(path)
-  const companiesActive = path.startsWith('/companies') || path === '/'
+  const companiesActive = (path.startsWith('/companies') || path === '/') && path !== '/investor-mvp'
   const roomsActive = path.startsWith('/rooms')
+  const investorActive = path === '/investor-mvp'
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -103,6 +108,16 @@ export default function Workspace() {
           <span className="brand-mark">V</span>VAULT
         </a>
         <nav className="sidebar-nav" aria-label="Điều hướng chính">
+          <a
+            href="#/investor-mvp"
+            className={investorActive ? 'active' : ''}
+            aria-current={investorActive ? 'page' : undefined}
+          >
+            <span className="nav-ico" aria-hidden="true">
+              ⚡
+            </span>
+            Thương vụ A–Z
+          </a>
           <a
             href="#/companies"
             className={companiesActive ? 'active' : ''}
@@ -122,6 +137,16 @@ export default function Workspace() {
               ▣
             </span>
             Phòng dữ liệu
+          </a>
+          <a
+            href="#/health"
+            className={path === '/health' ? 'active' : ''}
+            aria-current={path === '/health' ? 'page' : undefined}
+          >
+            <span className="nav-ico" aria-hidden="true">
+              ♥
+            </span>
+            Kết nối API
           </a>
         </nav>
         <div className="sidebar-foot">

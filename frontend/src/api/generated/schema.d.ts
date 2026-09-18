@@ -301,6 +301,9 @@ export interface components {
         CompanySummary: {
             /** Alias */
             alias: string;
+            deal_type?: components["schemas"]["DealType"] | null;
+            /** Employee Band */
+            employee_band?: string | null;
             /**
              * Id
              * Format: uuid
@@ -308,13 +311,29 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            region?: components["schemas"]["Region"] | null;
+            /** Revenue Band */
+            revenue_band?: string | null;
+            sector?: components["schemas"]["Sector"] | null;
+            /** Stake Percent */
+            stake_percent?: string | null;
             /** Tax Id */
             tax_id: string | null;
+            /**
+             * Total Facts Count
+             * @default 0
+             */
+            total_facts_count: number;
             /**
              * Updated At
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Verified Facts Count
+             * @default 0
+             */
+            verified_facts_count: number;
         };
         /** CompanyUpdate */
         CompanyUpdate: {
@@ -1072,6 +1091,9 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                sector?: components["schemas"]["Sector"] | null;
+                region?: components["schemas"]["Region"] | null;
+                deal_type?: components["schemas"]["DealType"] | null;
                 offset?: number;
                 limit?: number;
             };
@@ -1481,7 +1503,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1568,7 +1590,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1653,7 +1675,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1742,7 +1764,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1828,7 +1850,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -1918,7 +1940,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -2012,7 +2034,7 @@ export interface operations {
                     "application/json": components["schemas"]["ApiError"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description Content Too Large */
             413: {
                 headers: {
                     [name: string]: unknown;

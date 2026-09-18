@@ -7,6 +7,7 @@ from backend.app.core.config import Settings
 from backend.app.api.companies import router as company_router
 from backend.app.api.rooms import router as room_router
 from backend.app.api.body_limit import BodyLimitMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -26,6 +27,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     application.state.engine = None
     application.state.session_factory = None
+
+    origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins if "*" not in origins else ["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     application.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 65536)
     application.include_router(health_router(settings), prefix=settings.api_v1_str)
     application.include_router(company_router, prefix=settings.api_v1_str)

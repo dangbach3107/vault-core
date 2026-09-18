@@ -10,10 +10,9 @@ from backend.app.api.dependencies import database_session
 from backend.app.db.models import Company, utcnow
 from backend.app.schemas.company import (
     AnonymousPreview, CompanyInput, CompanyResponse, CompanySummary, CompanyUpdate,
-    IdentifiedPreview, RestrictedPreview,
+    DealType, IdentifiedPreview, Region, RestrictedPreview, Sector, StrictModel,
 )
-from backend.app.services.profiles import changed_verified_facts, preview, response
-from backend.app.schemas.company import StrictModel
+from backend.app.services.profiles import changed_verified_facts, extract_summary, preview, response
 
 class ApiError(StrictModel):
     detail: str
@@ -43,11 +42,34 @@ def save(session: Session):
 
 
 @router.get("", response_model=list[CompanySummary], operation_id="list_companies")
-def list_companies(session: DB, q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
-    query = select(Company).order_by(Company.updated_at.desc(), Company.id).offset(offset).limit(limit)
+def list_companies(
+    session: DB,
+    q: str = Query(default="", max_length=200),
+    sector: Sector | None = Query(default=None),
+    region: Region | None = Query(default=None),
+    deal_type: DealType | None = Query(default=None),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+):
+    query = select(Company).order_by(Company.updated_at.desc(), Company.id)
     if q.strip():
-        query = query.where(or_(Company.name.icontains(q.strip(), autoescape=True), Company.tax_id.icontains(q.strip(), autoescape=True)))
-    return [CompanySummary(id=row.id, alias=row.alias, name=row.name, tax_id=row.tax_id, updated_at=row.updated_at) for row in session.scalars(query)]
+        term = q.strip()
+        query = query.where(
+            or_(
+                Company.name.icontains(term, autoescape=True),
+                Company.tax_id.icontains(term, autoescape=True),
+                Company.alias.icontains(term, autoescape=True),
+            )
+        )
+    if sector is not None:
+        query = query.where(Company.profile[("sector", "value")].as_string() == sector.value)
+    if region is not None:
+        query = query.where(Company.profile[("region", "value")].as_string() == region.value)
+    if deal_type is not None:
+        query = query.where(Company.profile[("deal_type", "value")].as_string() == deal_type.value)
+
+    query = query.offset(offset).limit(limit)
+    return [extract_summary(row) for row in session.scalars(query)]
 
 
 @router.post("", response_model=CompanyResponse, status_code=201, operation_id="create_company")
