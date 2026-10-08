@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import './investor-mvp.css'
 import { request } from '../../api/workspace'
 
 type Tab = 'buyer' | 'seller' | 'vault' | 'legal' | 'tech' | 'finance'

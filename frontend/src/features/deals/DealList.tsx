@@ -46,7 +46,7 @@ export default function DealList({ role }: { role?: string }) {
 
   return <section className="deal-hub" aria-labelledby="deal-hub-title">
     <div className="hero-panel deal-hub-hero">
-      <div><p className="eyebrow">Deal workspace</p><h1 id="deal-hub-title">Lead & thương vụ</h1>
+      <div><p className="eyebrow">Deal workspace</p><h2 id="deal-hub-title">Lead & thương vụ</h2>
         <p className="hero-sub">Quản lý buyer request, seller profile, approvals, VDR, DD, offer, closing, phí và bàn giao theo từng deal.</p></div>
       <span className="status-pill ready">{deals.length} deal</span>
     </div>

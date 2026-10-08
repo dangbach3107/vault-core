@@ -17,9 +17,35 @@ import {
   type AuthSession,
 } from './api/config'
 import { request } from './api/workspace'
-import './workspace.css'
 
 type Role = NonNullable<AuthSession>['user']['role']
+
+// Outline icons (24px grid, stroke = currentColor).
+const icons = {
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  deals:
+    'M3 7h18M3 7v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M3 7l2-3h14l2 3M9 11h6',
+  approvals: 'M12 3 4 6v6c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V6zM9 12l2 2 4-4',
+  companies:
+    'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M8 8h3M8 12h3M8 16h3M2 21h20',
+  rooms:
+    'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+}
+
+function Icon({ name }: { name: keyof typeof icons }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={icons[name]} />
+    </svg>
+  )
+}
 
 function pathOf(hash: string) {
   return hash.slice(1).split('?')[0] || ''
@@ -29,37 +55,37 @@ function pathOf(hash: string) {
 const navigation: {
   label: string
   href: string
-  icon: string
+  icon: keyof typeof icons
   roles: Role[]
 }[] = [
   {
     label: 'Tổng quan',
     href: '#/vault',
-    icon: '◈',
+    icon: 'home',
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD', 'FINANCE'],
   },
   {
     label: 'Deals',
     href: '#/deals',
-    icon: '☰',
+    icon: 'deals',
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD', 'FINANCE'],
   },
   {
     label: 'Disclosure approvals',
     href: '#/disclosures',
-    icon: '☑',
+    icon: 'approvals',
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'],
   },
   {
     label: 'Doanh nghiệp',
     href: '#/companies',
-    icon: '⌂',
+    icon: 'companies',
     roles: ['SELLER', 'VAULT_ADMIN', 'LEGAL'],
   },
   {
     label: 'Phòng dữ liệu',
     href: '#/rooms',
-    icon: '▣',
+    icon: 'rooms',
     roles: ['SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD'],
   },
 ]
@@ -101,7 +127,9 @@ function needsBackend(path: string) {
 function navActive(path: string, href: string) {
   const target = href.slice(1)
   if (target === '/')
-    return path === '/' || path === '/companies' || path.startsWith('/companies/')
+    return (
+      path === '/' || path === '/companies' || path.startsWith('/companies/')
+    )
   return path === target || path.startsWith(target + '/')
 }
 
@@ -148,7 +176,8 @@ function crumb(path: string) {
 function titleOf(path: string) {
   if (path === '/vault') return 'Tổng quan'
   if (path === '/investor-mvp') return 'Investor MVP'
-  if (path === '/access' || path === '/disclosures') return 'Disclosure approvals'
+  if (path === '/access' || path === '/disclosures')
+    return 'Disclosure approvals'
   if (path === '/deals') return 'Deals'
   if (path.startsWith('/deals/')) return 'Chi tiết deal'
   if (path === '/companies/new') return 'Tạo hồ sơ'
@@ -165,7 +194,7 @@ function BackendRequiredNotice({ target }: { target: string }) {
   return (
     <section className="panel backend-required">
       <p className="eyebrow">Frontend-only demo</p>
-      <h1>Màn này cần backend riêng</h1>
+      <h2>Màn này cần backend riêng</h2>
       <p>
         Link Vercel hiện chỉ deploy frontend để demo luồng A–Z. Các màn{' '}
         <strong>Doanh nghiệp</strong>, <strong>Phòng dữ liệu</strong> và{' '}
@@ -327,15 +356,40 @@ export default function Workspace() {
       </p>
     )
   const crumbs = crumb(path)
+  if (!session && !hostedWithoutBackend)
+    return (
+      <main className="auth-shell">
+        <div className="auth-stack">
+          <span className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              V
+            </span>
+            VAULT
+          </span>
+          <Login onLogin={setSession} />
+          <p className="auth-foot">
+            VAULT · Verified Access to Unlisted Listings & Transactions
+          </p>
+        </div>
+      </main>
+    )
   return (
     <div className="app-frame">
       <aside className="sidebar">
-        <a className="brand sidebar-brand" href="#/companies">
-          <span className="brand-mark">V</span>VAULT
+        <a
+          className="brand sidebar-brand"
+          href={session ? '#/vault' : '#/companies'}
+        >
+          <span className="brand-mark" aria-hidden="true">
+            V
+          </span>
+          VAULT
         </a>
         <nav className="sidebar-nav" aria-label="Điều hướng chính">
           {navigation
-            .filter((item) => !session || item.roles.includes(session.user.role))
+            .filter(
+              (item) => !session || item.roles.includes(session.user.role),
+            )
             .map((item) => {
               const active = navActive(path, item.href)
               return (
@@ -346,7 +400,7 @@ export default function Workspace() {
                   aria-current={active ? 'page' : undefined}
                 >
                   <span className="nav-ico" aria-hidden="true">
-                    {item.icon}
+                    <Icon name={item.icon} />
                   </span>
                   {item.label}
                 </a>
@@ -364,27 +418,14 @@ export default function Workspace() {
               <strong>
                 {session ? session.user.display_name : 'Chưa đăng nhập'}
               </strong>
-              <span>{session ? session.user.username : 'Bản thử nội bộ'}</span>
+              <span>
+                {session
+                  ? `Đang đăng nhập · ${session.user.username}`
+                  : 'Bản thử nội bộ'}
+              </span>
             </div>
           </div>
-          <span className="demo-pill">Môi trường demo</span>
-        </div>
-      </aside>
-      <div className="workspace-main form-skin">
-        <p className="local-note">
-          Bản thử nội bộ · Chỉ dùng dữ liệu giả lập
-          {hostedWithoutBackend
-            ? ' · Vercel chưa cấu hình backend, hãy dùng Investor MVP để test flow A–Z'
-            : hasConfiguredBackend()
-              ? ' · Hosted full-stack demo: frontend gọi backend public đã cấu hình'
-              : ''}
-        </p>
-        {session && (
-          <div className="session-bar">
-            <span>
-              Đăng nhập: <strong>{session.user.display_name}</strong> ·{' '}
-              {session.user.username}
-            </span>
+          {session && (
             <button
               className="secondary"
               onClick={() => {
@@ -394,20 +435,38 @@ export default function Workspace() {
             >
               Đăng xuất
             </button>
+          )}
+        </div>
+      </aside>
+      <div className="workspace-main form-skin">
+        <div className="app-topbar">
+          <nav className="crumb" aria-label="Breadcrumb">
+            {crumbs.map(([label, href], i) => (
+              <span key={label} className="crumb-item">
+                {i > 0 && (
+                  <span className="crumb-sep" aria-hidden="true">
+                    /{' '}
+                  </span>
+                )}
+                {href ? (
+                  <a href={href}>{label}</a>
+                ) : (
+                  <span aria-current="page">{label}</span>
+                )}
+              </span>
+            ))}
+          </nav>
+          <div className="env-note">
+            {hostedWithoutBackend
+              ? 'Vercel chưa cấu hình backend, hãy dùng Investor MVP để test flow A–Z'
+              : hasConfiguredBackend()
+                ? 'Hosted full-stack demo'
+                : null}
+            <span className="env-pill">Demo nội bộ · dữ liệu giả lập</span>
           </div>
-        )}
+        </div>
         <header className="context-bar">
-          <div>
-            <p className="crumb">
-              {crumbs.map(([label, href], i) => (
-                <span key={label}>
-                  {i > 0 && ' / '}
-                  {href ? <a href={href}>{label}</a> : label}
-                </span>
-              ))}
-            </p>
-            <h1>{titleOf(path)}</h1>
-          </div>
+          <h1>{titleOf(path)}</h1>
         </header>
         <div key={hash} className="workspace-content">
           {hostedWithoutBackend ? (
@@ -417,7 +476,7 @@ export default function Workspace() {
           ) : session ? (
             <section className="panel forbidden">
               <p className="eyebrow">Không có quyền</p>
-              <h1>{session.user.display_name} không được mở chức năng này</h1>
+              <h2>{session.user.display_name} không được mở chức năng này</h2>
               <p>
                 Hãy quay lại tổng quan để chọn đúng chức năng được cấp theo tài
                 khoản đăng nhập.
@@ -431,7 +490,9 @@ export default function Workspace() {
           )}
         </div>
         <footer>
-          <span>VAULT · Verified Access to Unlisted Listings & Transactions</span>
+          <span>
+            VAULT · Verified Access to Unlisted Listings & Transactions
+          </span>
           <a href="#/health">Kết nối API</a>
         </footer>
       </div>

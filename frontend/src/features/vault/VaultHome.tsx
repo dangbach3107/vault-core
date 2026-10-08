@@ -33,7 +33,7 @@ const roleModules: Record<AuthUser['role'], { title: string; description: string
 
 export default function VaultHome({ user }: { user: AuthUser }) {
   return <section className="vault-home">
-    <div className="hero-panel"><p className="eyebrow">VAULT operating system</p><h1>Không gian làm việc của {user.display_name}</h1><p className="hero-sub">Các chức năng độc lập theo đúng trách nhiệm của role. Màn A–Z chỉ còn là demo tham khảo.</p></div>
+    <div className="hero-panel"><p className="eyebrow">VAULT operating system</p><h2>Không gian làm việc của {user.display_name}</h2><p className="hero-sub">Các chức năng độc lập theo đúng trách nhiệm của role. Màn A–Z chỉ còn là demo tham khảo.</p></div>
     <div className="module-grid">{roleModules[user.role].map((module) => <a className="panel module-card" href={module.href} key={module.title}><span className="module-arrow">→</span><h2>{module.title}</h2><p>{module.description}</p></a>)}</div>
   </section>
 }

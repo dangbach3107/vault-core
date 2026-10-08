@@ -68,7 +68,7 @@ export default function DocumentPage({
       <div className="page-heading">
         <div>
           <p className="eyebrow">{roomResult.data.title}</p>
-          <h1>{document.title}</h1>
+          <h2>{document.title}</h2>
           <p className="muted">
             Phiên bản mới nhất: {document.current_version}
           </p>
