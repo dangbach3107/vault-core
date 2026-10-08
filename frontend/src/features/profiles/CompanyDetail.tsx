@@ -4,6 +4,7 @@ import { request } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import { fields, issueLabels, optionLabels, statusLabels } from './fields'
+import ActionDialog from '../../components/ActionDialog'
 
 type Tab = 'overview' | 'finance' | 'source' | 'rooms' | 'preview'
 
@@ -137,6 +138,7 @@ export default function CompanyDetail({
   const [layer, setLayer] = useState(2)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   if (!result.data) return <LoadState {...result} />
   const company = result.data
   const items = factsOf(company)
@@ -180,25 +182,31 @@ export default function CompanyDetail({
             đã được kiểm toán.
           </p>
         </div>
-<<<<<<< Updated upstream
         <div className="context-actions">
           <a className="button-link ghost" href={`#/companies/${id}/edit`}>
             Chỉnh sửa
           </a>
           <button type="button" onClick={() => setTab('preview')}>
             Xem trước công bố
-=======
-        <div className="actions">
-          <a className="button-link" href={`#/companies/${id}/edit`}>
-            Sửa hồ sơ
-          </a>
+          </button>
           <button
             type="button"
             className="danger"
             disabled={deleting}
-            onClick={async () => {
-              if (!confirm('Xoá hồ sơ nháp này? Thao tác không thể hoàn tác.'))
-                return
+            onClick={() => setConfirmDelete(true)}
+          >
+            {deleting ? 'Đang xoá…' : 'Xoá hồ sơ'}
+          </button>
+        </div>
+      </div>
+      {confirmDelete && <ActionDialog
+        title={`Xóa hồ sơ “${company.profile.company_name.value}”?`}
+        description="Hồ sơ nháp sẽ bị xóa vĩnh viễn. Hồ sơ có phòng dữ liệu liên quan sẽ được backend chặn để bảo toàn tài liệu."
+        confirmLabel="Xóa hồ sơ"
+        danger
+        busy={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onSubmit={async () => {
               setDeleting(true)
               setDeleteError('')
               try {
@@ -211,14 +219,10 @@ export default function CompanyDetail({
                     : 'Không xoá được hồ sơ.',
                 )
                 setDeleting(false)
+                setConfirmDelete(false)
               }
-            }}
-          >
-            {deleting ? 'Đang xoá…' : 'Xoá hồ sơ'}
->>>>>>> Stashed changes
-          </button>
-        </div>
-      </div>
+        }}
+      />}
       {deleteError && (
         <p className="error-box" role="alert">
           {deleteError}

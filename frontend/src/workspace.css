@@ -594,8 +594,6 @@ a.secondary-link {
   .room-layout.three {
     grid-template-columns: 1fr;
   }
-<<<<<<< Updated upstream
-=======
 }
 .workspace nav,
 .actions,
@@ -830,7 +828,6 @@ a.secondary-link {
 }
 .workspace h3 {
   font-size: 16px;
->>>>>>> Stashed changes
 }
 @media (max-width: 700px) {
   .page-heading,
@@ -844,9 +841,7 @@ a.secondary-link {
     grid-template-columns: 1fr;
   }
   .workspace .panel {
-<<<<<<< Updated upstream
     padding: 16px;
-=======
     padding: 18px;
   }
   .workspace nav {
@@ -1772,7 +1767,6 @@ footer {
   .next-action-banner {
     flex-direction: column;
     align-items: flex-start;
->>>>>>> Stashed changes
   }
 }
 
@@ -2031,6 +2025,14 @@ footer {
 .danger-button { background: #fff; color: #9f1239; border: 1px solid #d9a4ae; }
 .danger-button:hover:not(:disabled) { background: #9f1239; color: #fff; border-color: #9f1239; }
 .document-record-actions { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgb(35 8 14 / 58%); backdrop-filter: blur(4px); }
+.form-dialog { width: min(520px, 100%); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid #e1b7bf; border-radius: 18px; background: #fff; box-shadow: 0 28px 90px rgb(54 8 18 / 32%); }
+.form-dialog form { display: grid; gap: 1rem; padding: 1.5rem; }
+.dialog-heading h2 { margin: .25rem 0 .5rem; }
+.dialog-heading p:last-child { margin-bottom: 0; color: var(--muted); line-height: 1.55; }
+.dialog-fields { display: grid; gap: .9rem; }
+.dialog-fields label { display: grid; gap: .4rem; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-top: .25rem; }
 .access-control-panel { border-top: 4px solid var(--red-800); }
 .access-request-form { display: grid; grid-template-columns: 180px minmax(260px, 1fr) auto; gap: 1rem; align-items: end; }
 .access-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }

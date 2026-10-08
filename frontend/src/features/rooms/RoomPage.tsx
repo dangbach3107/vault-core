@@ -4,6 +4,7 @@ import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
 import { request } from '../../api/workspace'
+import ActionDialog from '../../components/ActionDialog'
 
 function extOf(name: string) {
   const i = name.lastIndexOf('.')
@@ -26,6 +27,7 @@ export default function RoomPage({
   const [uploading, setUploading] = useState(false)
   const [deleting, setDeleting] = useState('')
   const [error, setError] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<null | { kind: 'room' } | { kind: 'document'; document: RoomDetail['documents'][number] }>(null)
   function onSaved(document: DocumentDetail) {
     setMessage(
       `Đã tải lên “${document.title}”, phiên bản ${document.current_version}.`,
@@ -35,7 +37,6 @@ export default function RoomPage({
     result.retry()
   }
   async function deleteDocument(document: RoomDetail['documents'][number]) {
-    if (!confirm(`Xóa tài liệu “${document.title}” và toàn bộ phiên bản? Thao tác này không thể hoàn tác.`)) return
     setDeleting(document.id)
     setError('')
     try {
@@ -46,10 +47,10 @@ export default function RoomPage({
       setError((reason as Error).message)
     } finally {
       setDeleting('')
+      setPendingDelete(null)
     }
   }
   async function deleteRoom() {
-    if (!confirm(`Xóa phòng “${room.title}”, toàn bộ tài liệu và mọi phiên bản? Thao tác này không thể hoàn tác.`)) return
     setDeleting('room')
     setError('')
     try {
@@ -76,7 +77,7 @@ export default function RoomPage({
         </div>
         <div className="actions">
           <button onClick={() => setUploading(!uploading)}>{uploading ? 'Đóng form upload' : 'Thêm tài liệu'}</button>
-          <button className="danger-button" onClick={deleteRoom} disabled={deleting === 'room'}>{deleting === 'room' ? 'Đang xóa…' : 'Xóa phòng'}</button>
+          <button className="danger-button" onClick={() => setPendingDelete({ kind: 'room' })} disabled={deleting === 'room'}>{deleting === 'room' ? 'Đang xóa…' : 'Xóa phòng'}</button>
         </div>
       </div>
       {message && (
@@ -115,7 +116,6 @@ export default function RoomPage({
           {documents.length === 0 ? (
             <p className="empty panel">Chưa có tài liệu trong nhóm này.</p>
           ) : (
-<<<<<<< Updated upstream
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
@@ -125,6 +125,7 @@ export default function RoomPage({
                     <th>Dung lượng</th>
                     <th>Phiên bản</th>
                     <th>Tải lên</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -148,29 +149,16 @@ export default function RoomPage({
                           document.latest.uploaded_at,
                         ).toLocaleString('vi-VN')}
                       </td>
+                      <td>
+                        <button className="danger-button" onClick={() => setPendingDelete({ kind: 'document', document })} disabled={deleting === document.id}>
+                          {deleting === document.id ? 'Đang xóa…' : 'Xóa'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-=======
-            documents.map((document) => (
-              <article className="record panel document-record" key={document.id}>
-                <div>
-                  <h2>{document.title}</h2>
-                  <p>{document.latest.filename}</p>
-                  <p>
-                    Phiên bản {document.current_version} ·{' '}
-                    {(document.latest.size_bytes / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <div className="document-record-actions">
-                  <a className="button-link" href={`#/rooms/${id}/documents/${document.id}`}>Xem & phiên bản</a>
-                  <button className="danger-button" onClick={() => deleteDocument(document)} disabled={deleting === document.id}>{deleting === document.id ? 'Đang xóa…' : 'Xóa'}</button>
-                </div>
-              </article>
-            ))
->>>>>>> Stashed changes
           )}
         </div>
         <aside className="panel">
@@ -194,6 +182,15 @@ export default function RoomPage({
           )}
         </aside>
       </div>
+      {pendingDelete && <ActionDialog
+        title={pendingDelete.kind === 'room' ? `Xóa phòng “${room.title}”?` : `Xóa tài liệu “${pendingDelete.document.title}”?`}
+        description={pendingDelete.kind === 'room' ? 'Toàn bộ tài liệu và mọi phiên bản trong phòng sẽ bị xóa vĩnh viễn.' : 'Tài liệu và toàn bộ lịch sử phiên bản sẽ bị xóa vĩnh viễn.'}
+        confirmLabel={pendingDelete.kind === 'room' ? 'Xóa phòng dữ liệu' : 'Xóa tài liệu'}
+        danger
+        busy={Boolean(deleting)}
+        onCancel={() => setPendingDelete(null)}
+        onSubmit={() => pendingDelete.kind === 'room' ? deleteRoom() : deleteDocument(pendingDelete.document)}
+      />}
     </section>
   )
 }

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.health import health_router
 from backend.app.core.config import Settings
@@ -28,8 +29,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     application.state.engine = None
     application.state.session_factory = None
-<<<<<<< Updated upstream
-=======
     allowed_origins = sorted(settings.allowed_origin_values())
     if allowed_origins:
         application.add_middleware(
@@ -40,7 +39,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             expose_headers=["Content-Disposition"],
             max_age=600,
         )
->>>>>>> Stashed changes
     application.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 65536)
     application.include_router(health_router(settings), prefix=settings.api_v1_str)
     application.include_router(auth_router, prefix=settings.api_v1_str)

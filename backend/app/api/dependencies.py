@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import secrets
 from threading import Lock
 from urllib.parse import urlsplit
 
@@ -12,18 +13,26 @@ from backend.app.core.auth import current_user
 _engine_lock = Lock()
 
 
+def origin_allowed(settings, origin: str) -> bool:
+    parsed = urlsplit(origin)
+    if parsed.hostname in {"127.0.0.1", "localhost", "testserver"}:
+        return True
+    return origin in settings.allowed_origin_values()
+
+
 def database_session(request: Request) -> Generator[Session, None, None]:
-    if not request.app.state.settings.internal_preview_enabled:
+    settings = request.app.state.settings
+    if not settings.internal_preview_enabled:
         raise HTTPException(503, "Bản xem trước nội bộ chưa bật. Xem hướng dẫn thiết lập trong README.")
-    # A loopback preview is not buyer authentication. Reject browser cross-site
-    # requests and hostile Host values, including DNS-rebinding attempts.
-    if request.url.hostname not in {"127.0.0.1", "localhost", "testserver"}:
-        raise HTTPException(403, "Bản xem trước chỉ dùng trên máy cục bộ.")
-    origin = request.headers.get("origin")
-    if request.headers.get("sec-fetch-site") == "cross-site" or (origin and urlsplit(origin).hostname not in {"127.0.0.1", "localhost"}):
+
+    # This synthetic preview may be exposed for an internal hosted demo only when
+    # ALLOWED_HOSTS/ALLOWED_ORIGINS are explicitly configured. That still is not
+    # buyer authentication or production access control.
+    if request.url.hostname not in settings.allowed_hostnames():
+        raise HTTPException(403, "Host chưa được phép dùng bản xem trước.")
+    origin = (request.headers.get("origin") or "").rstrip("/")
+    if origin and not origin_allowed(settings, origin):
         raise HTTPException(403, "Không chấp nhận yêu cầu từ trang bên ngoài.")
-<<<<<<< Updated upstream
-=======
     if request.headers.get("sec-fetch-site") == "cross-site" and origin and not origin_allowed(settings, origin):
         raise HTTPException(403, "Không chấp nhận yêu cầu từ trang bên ngoài.")
 
@@ -34,7 +43,6 @@ def database_session(request: Request) -> Generator[Session, None, None]:
     # Every database-backed MVP route requires a signed role session.
     current_user(request)
 
->>>>>>> Stashed changes
     with _engine_lock:
         if request.app.state.session_factory is None:
             try:

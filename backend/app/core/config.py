@@ -22,8 +22,6 @@ class Settings(BaseSettings):
     internal_preview_enabled: bool = False
     upload_directory: Path = REPOSITORY_ROOT / ".data" / "uploads"
     max_upload_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=50 * 1024 * 1024)
-<<<<<<< Updated upstream
-=======
 
     # Deployment/demo controls. Keep empty for local-only behavior.
     # Comma-separated values; examples:
@@ -56,4 +54,3 @@ class Settings(BaseSettings):
 
 def csv_values(value: str) -> set[str]:
     return {item.strip().rstrip("/") for item in value.split(",") if item.strip()}
->>>>>>> Stashed changes
