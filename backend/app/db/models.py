@@ -20,6 +20,7 @@ class Company(Base):
     alias: Mapped[str] = mapped_column(String(40), unique=True)
     name: Mapped[str] = mapped_column(String(200), index=True)
     tax_id: Mapped[str | None] = mapped_column(String(30), unique=True)
+    owner_username: Mapped[str] = mapped_column(String(80), index=True)
     profile: Mapped[dict] = mapped_column(JSONB)
     revision: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

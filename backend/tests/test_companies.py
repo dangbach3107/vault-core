@@ -30,6 +30,12 @@ def create(client, body=None):
     return response.json()
 
 
+def auth_headers(client, username):
+    login = client.post("/api/v1/auth/login", json={"username": username, "password": "vault-demo"})
+    assert login.status_code == 200, login.text
+    return {"Authorization": f'Bearer {login.json()["access_token"]}'}
+
+
 def test_persistence_edit_and_stale_revision(client):
     company = create(client)
     path = f'/api/v1/companies/{company["id"]}'
@@ -73,6 +79,43 @@ def test_company_and_room_routes_enforce_login_role(client):
     assert client.get("/api/v1/companies", headers=buyer).status_code == 403
     assert client.post("/api/v1/companies", json={"company_name": {"value": "Not allowed"}}, headers=buyer).status_code == 403
     assert client.get("/api/v1/rooms", headers=buyer).status_code == 403
+
+
+def test_sellers_only_access_their_own_company_and_rooms(client):
+    seller = auth_headers(client, "seller")
+    other_seller = auth_headers(client, "seller2")
+    body = draft()
+    body["tax_id"]["value"] = "SYNTH-OWNER-01"
+    created = client.post("/api/v1/companies", json=body, headers=seller)
+    assert created.status_code == 201, created.text
+    company = created.json()
+    company_path = f'/api/v1/companies/{company["id"]}'
+    assert company["owner_username"] == "seller"
+    assert [row["id"] for row in client.get("/api/v1/companies", headers=seller).json()] == [company["id"]]
+    assert client.get("/api/v1/companies", headers=other_seller).json() == []
+    assert client.get(company_path, headers=other_seller).status_code == 404
+    assert client.get(company_path + "/preview/1", headers=other_seller).status_code == 404
+    assert client.put(company_path, json={"expected_revision": 1, "profile": company["profile"]}, headers=other_seller).status_code == 404
+    assert client.delete(company_path, headers=other_seller).status_code == 404
+    assert client.get(company_path).status_code == 200
+
+    created_room = client.post(
+        "/api/v1/rooms",
+        json={"company_id": company["id"], "title": "Seller private room"},
+        headers=seller,
+    )
+    assert created_room.status_code == 201, created_room.text
+    room = created_room.json()
+    room_path = f'/api/v1/rooms/{room["id"]}'
+    assert [row["id"] for row in client.get("/api/v1/rooms", headers=seller).json()] == [room["id"]]
+    assert client.get("/api/v1/rooms", headers=other_seller).json() == []
+    assert client.get(room_path, headers=other_seller).status_code == 404
+    assert client.post(
+        "/api/v1/rooms",
+        json={"company_id": company["id"], "title": "Forbidden room"},
+        headers=other_seller,
+    ).status_code == 404
+    assert client.delete(room_path, headers=other_seller).status_code == 404
 
 
 def test_preview_backend_allowlist_and_missing_vs_zero(client):

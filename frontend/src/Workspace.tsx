@@ -370,7 +370,7 @@ export default function Workspace() {
           <span className="demo-pill">Môi trường demo</span>
         </div>
       </aside>
-      <div className="workspace-main">
+      <div className="workspace-main form-skin">
         <p className="local-note">
           Bản thử nội bộ · Chỉ dùng dữ liệu giả lập
           {hostedWithoutBackend

@@ -8,7 +8,7 @@ RESTRICTED = {"shareholders", "decision_maker", "permitted_use"}
 
 def response(company: Company) -> CompanyResponse:
     return CompanyResponse(
-        id=company.id, alias=company.alias, revision=company.revision,
+        id=company.id, alias=company.alias, owner_username=company.owner_username, revision=company.revision,
         created_at=company.created_at, updated_at=company.updated_at, profile=company.profile,
     )
 

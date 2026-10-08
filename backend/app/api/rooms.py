@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from backend.app.api.companies import ApiError, DB, find_company
+from backend.app.api.companies import ApiError, DB, find_company, find_company_for_user
 from backend.app.db.models import Company, Document, DocumentVersion, Room
 from backend.app.schemas.room import (
     DocumentDetail, DocumentResponse, Folder, FolderResponse, FOLDER_LABELS,
@@ -22,14 +22,17 @@ RoomReader = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMI
 RoomEditor = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN"))]
 
 
-def find_room(session, room_id: UUID) -> Room:
+def find_room(session, room_id: UUID, user: UserResponse) -> Room:
     room = session.get(Room, room_id)
     if room is None:
         raise HTTPException(404, "Không tìm thấy phòng dữ liệu.")
+    if user.role == "SELLER":
+        find_company_for_user(session, room.company_id, user)
     return room
 
 
-def find_document(session, room_id: UUID, document_id: UUID, lock=False) -> Document:
+def find_document(session, room_id: UUID, document_id: UUID, user: UserResponse, lock=False) -> Document:
+    find_room(session, room_id, user)
     query = select(Document).where(Document.id == document_id, Document.room_id == room_id)
     row = session.scalar(query.with_for_update() if lock else query)
     if row is None:
@@ -64,6 +67,8 @@ def delete_blob_files(settings, storage_keys: list[str]) -> None:
 @router.get("", response_model=list[RoomResponse], operation_id="list_rooms")
 def list_rooms(session: DB, user: RoomReader, company_id: UUID | None = None, offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
     query = select(Room, Company.name).join(Company, Room.company_id == Company.id).order_by(Room.created_at.desc(), Room.id)
+    if user.role == "SELLER":
+        query = query.where(Company.owner_username == user.username)
     if company_id:
         query = query.where(Room.company_id == company_id)
     return [room_response(room, name) for room, name in session.execute(query.offset(offset).limit(limit))]
@@ -71,7 +76,7 @@ def list_rooms(session: DB, user: RoomReader, company_id: UUID | None = None, of
 
 @router.post("", response_model=RoomResponse, status_code=201, operation_id="create_room")
 def create_room(body: RoomInput, session: DB, user: RoomEditor):
-    company = find_company(session, body.company_id)
+    company = find_company_for_user(session, body.company_id, user)
     row = Room(company_id=company.id, title=body.title)
     session.add(row)
     try:
@@ -84,7 +89,7 @@ def create_room(body: RoomInput, session: DB, user: RoomEditor):
 
 @router.get("/{room_id}", response_model=RoomDetail, operation_id="get_room")
 def get_room(room_id: UUID, request: Request, session: DB, user: RoomReader):
-    room = find_room(session, room_id)
+    room = find_room(session, room_id, user)
     rows = session.execute(select(Document, DocumentVersion).join(DocumentVersion, (DocumentVersion.document_id == Document.id) & (DocumentVersion.number == Document.current_version)).where(Document.room_id == room_id).order_by(Document.title, Document.id))
     documents = [document_response(document, version) for document, version in rows]
     folders = [FolderResponse(id=folder, label=label, document_count=sum(doc.folder == folder for doc in documents)) for folder, label in FOLDER_LABELS.items()]
@@ -93,7 +98,7 @@ def get_room(room_id: UUID, request: Request, session: DB, user: RoomReader):
 
 @router.delete("/{room_id}", status_code=204, operation_id="delete_room")
 def delete_room(room_id: UUID, request: Request, session: DB, user: RoomEditor):
-    room = find_room(session, room_id)
+    room = find_room(session, room_id, user)
     document_ids = list(session.scalars(select(Document.id).where(Document.room_id == room.id)))
     storage_keys = list(session.scalars(select(DocumentVersion.storage_key).where(DocumentVersion.document_id.in_(document_ids)))) if document_ids else []
     if document_ids:
@@ -125,7 +130,7 @@ def save_file_version(request, session, document, upload, note):
 
 @router.post("/{room_id}/documents", response_model=DocumentDetail, status_code=201, operation_id="upload_document")
 def upload_document(room_id: UUID, request: Request, session: DB, user: RoomEditor, file: Annotated[UploadFile, File()], folder: Annotated[Folder, Form()], title: Annotated[str, Form(min_length=1, max_length=200)], note: Annotated[str, Form(max_length=1000)] = ""):
-    find_room(session, room_id)
+    find_room(session, room_id, user)
     if not title.strip():
         raise HTTPException(422, [{"loc": ["body", "title"], "type": "value_error", "msg": "Tên tài liệu không được trống."}])
     document = Document(room_id=room_id, folder=folder, title=title.strip(), current_version=1)
@@ -136,12 +141,12 @@ def upload_document(room_id: UUID, request: Request, session: DB, user: RoomEdit
 
 @router.get("/{room_id}/documents/{document_id}", response_model=DocumentDetail, operation_id="get_document")
 def get_document(room_id: UUID, document_id: UUID, session: DB, user: RoomReader):
-    return document_detail(session, find_document(session, room_id, document_id))
+    return document_detail(session, find_document(session, room_id, document_id, user))
 
 
 @router.delete("/{room_id}/documents/{document_id}", status_code=204, operation_id="delete_document")
 def delete_document(room_id: UUID, document_id: UUID, request: Request, session: DB, user: RoomEditor):
-    document = find_document(session, room_id, document_id, lock=True)
+    document = find_document(session, room_id, document_id, user, lock=True)
     storage_keys = list(session.scalars(select(DocumentVersion.storage_key).where(DocumentVersion.document_id == document.id)))
     session.query(DocumentVersion).filter(DocumentVersion.document_id == document.id).delete(synchronize_session=False)
     session.delete(document)
@@ -155,14 +160,14 @@ def delete_document(room_id: UUID, document_id: UUID, request: Request, session:
 
 @router.post("/{room_id}/documents/{document_id}/versions", response_model=DocumentDetail, status_code=201, operation_id="upload_version")
 def upload_version(room_id: UUID, document_id: UUID, request: Request, session: DB, user: RoomEditor, file: Annotated[UploadFile, File()], note: Annotated[str, Form(max_length=1000)] = ""):
-    document = find_document(session, room_id, document_id, lock=True)
+    document = find_document(session, room_id, document_id, user, lock=True)
     document.current_version += 1
     return save_file_version(request, session, document, file, note)
 
 
 @router.get("/{room_id}/documents/{document_id}/versions/{number}/content", response_class=FileResponse, responses={200: {"description": "Immutable version bytes; Office files are attachment-only.", "content": {media: {"schema": {"type": "string", "format": "binary"}} for media in set(MEDIA_TYPES.values())}}}, operation_id="get_document_content")
 def get_content(room_id: UUID, document_id: UUID, number: Annotated[int, Path(ge=1)], request: Request, session: DB, user: RoomReader, download: bool = False):
-    document = find_document(session, room_id, document_id)
+    document = find_document(session, room_id, document_id, user)
     version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == document.id, DocumentVersion.number == number))
     if version is None:
         raise HTTPException(404, "Không tìm thấy phiên bản.")

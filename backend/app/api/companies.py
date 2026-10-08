@@ -38,6 +38,13 @@ def find_company(session: Session, company_id: UUID, lock: bool = False) -> Comp
     return company
 
 
+def find_company_for_user(session: Session, company_id: UUID, user: UserResponse, lock: bool = False) -> Company:
+    company = find_company(session, company_id, lock)
+    if user.role == "SELLER" and company.owner_username != user.username:
+        raise HTTPException(404, "Không tìm thấy doanh nghiệp.")
+    return company
+
+
 def save(session: Session):
     try:
         session.commit()
@@ -48,15 +55,18 @@ def save(session: Session):
 
 @router.get("", response_model=list[CompanySummary], operation_id="list_companies")
 def list_companies(session: DB, user: CompanyReader, q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
-    query = select(Company).order_by(Company.updated_at.desc(), Company.id).offset(offset).limit(limit)
+    query = select(Company).order_by(Company.updated_at.desc(), Company.id)
+    if user.role == "SELLER":
+        query = query.where(Company.owner_username == user.username)
     if q.strip():
         query = query.where(or_(Company.name.icontains(q.strip(), autoescape=True), Company.tax_id.icontains(q.strip(), autoescape=True)))
-    return [CompanySummary(id=row.id, alias=row.alias, name=row.name, tax_id=row.tax_id, updated_at=row.updated_at) for row in session.scalars(query)]
+    query = query.offset(offset).limit(limit)
+    return [CompanySummary(id=row.id, alias=row.alias, owner_username=row.owner_username, name=row.name, tax_id=row.tax_id, updated_at=row.updated_at) for row in session.scalars(query)]
 
 
 @router.post("", response_model=CompanyResponse, status_code=201, operation_id="create_company")
 def create_company(body: CompanyInput, session: DB, user: CompanyEditor):
-    row = Company(alias=f"VAULT-{uuid4().hex[:12].upper()}", name=body.company_name.value, tax_id=body.tax_id.value, profile=body.model_dump(mode="json"))
+    row = Company(alias=f"VAULT-{uuid4().hex[:12].upper()}", owner_username=user.username, name=body.company_name.value, tax_id=body.tax_id.value, profile=body.model_dump(mode="json"))
     session.add(row)
     save(session)
     return response(row)
@@ -64,12 +74,12 @@ def create_company(body: CompanyInput, session: DB, user: CompanyEditor):
 
 @router.get("/{company_id}", response_model=CompanyResponse, operation_id="get_company")
 def get_company(company_id: UUID, session: DB, user: CompanyReader):
-    return response(find_company(session, company_id))
+    return response(find_company_for_user(session, company_id, user))
 
 
 @router.put("/{company_id}", response_model=CompanyResponse, operation_id="update_company")
 def update_company(company_id: UUID, body: CompanyUpdate, session: DB, user: CompanyEditor):
-    row = find_company(session, company_id, lock=True)
+    row = find_company_for_user(session, company_id, user, lock=True)
     if row.revision != body.expected_revision:
         raise HTTPException(409, "Hồ sơ đã được sửa ở nơi khác. Tải lại trước khi sửa tiếp.")
     profile = body.profile.model_dump(mode="json")
@@ -84,7 +94,7 @@ def update_company(company_id: UUID, body: CompanyUpdate, session: DB, user: Com
 
 @router.delete("/{company_id}", status_code=204, operation_id="delete_company")
 def delete_company(company_id: UUID, session: DB, user: CompanyEditor):
-    row = find_company(session, company_id, lock=True)
+    row = find_company_for_user(session, company_id, user, lock=True)
     if session.scalar(select(Room.id).where(Room.company_id == company_id).limit(1)) is not None:
         raise HTTPException(
             409,
@@ -96,4 +106,4 @@ def delete_company(company_id: UUID, session: DB, user: CompanyEditor):
 
 @router.get("/{company_id}/preview/{layer}", response_model=AnonymousPreview | IdentifiedPreview | RestrictedPreview, operation_id="preview_company")
 def preview_company(company_id: UUID, layer: Annotated[int, Path(ge=1, le=3)], session: DB, user: CompanyReader):
-    return preview(find_company(session, company_id), layer)
+    return preview(find_company_for_user(session, company_id, user), layer)

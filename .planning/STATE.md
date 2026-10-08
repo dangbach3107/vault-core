@@ -55,3 +55,10 @@ Python 36; Vitest 8 (sau sửa selector UI); Playwright 3 (chưa chạy lại sa
 Người dùng bảo A làm **Mở lớp** và/hoặc B làm **VDR & đóng** — song song. **Đừng code từ planning.**
 
 Còn mở: D-02 / D-03 production; bốn tên field Buyer chính thức (A-07 tạm dùng); e2e chưa chạy lại.
+
+## Cập nhật 2026-10-08 — seller data isolation
+
+- Thêm ownership theo `owner_username` cho hồ sơ doanh nghiệp qua migration `0004`; dữ liệu cũ được gán cho `admin`.
+- Seller chỉ thấy và thao tác hồ sơ/phòng dữ liệu thuộc chính tài khoản đó; truy cập chéo trả `404`.
+- Bổ sung tài khoản synthetic `seller2` và kiểm thử truy cập chéo ở company, preview và room.
+- Xác minh: 47 Python tests, 8 frontend tests, frontend build/lint, OpenAPI và generated API type check đều đạt.

@@ -500,6 +500,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Owner Username */
+            owner_username: string;
             profile: components["schemas"]["CompanyInput-Output"];
             /** Revision */
             revision: number;
@@ -520,6 +522,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Owner Username */
+            owner_username: string;
             /** Tax Id */
             tax_id: string | null;
             /**

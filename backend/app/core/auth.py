@@ -12,6 +12,7 @@ from backend.app.schemas.auth import Role, UserResponse
 USERS: dict[str, tuple[Role, str]] = {
     "buyer": ("BUYER", "Buyer"),
     "seller": ("SELLER", "Seller"),
+    "seller2": ("SELLER", "Seller khác"),
     "admin": ("VAULT_ADMIN", "VAULT Admin"),
     "legal": ("LEGAL", "Legal/Compliance"),
     "tech": ("TECH_DD", "Tech DD"),

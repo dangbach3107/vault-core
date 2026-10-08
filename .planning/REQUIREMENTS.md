@@ -76,3 +76,9 @@ Nghiệm thu A trên `#/disclosures` (8/8). Nghiệm thu B trên `#/closings` (7
 ## V1 vận hành (giữ để khỏi nhầm MVP)
 
 V1-01 brief đủ field · V1-06 từ chối buyer giả / thiếu NDA / sai file · V1-07 chữ ký thật · V1-08 MFA + watermark · V1-10 playbook 6 trục đã chốt D-06. **P3b không đóng các mục này.**
+
+## Data ownership
+
+- `SEC-03`: Seller chỉ được liệt kê, xem, sửa và xóa hồ sơ doanh nghiệp do chính tài khoản seller đó tạo.
+- `SEC-04`: Phòng dữ liệu và tài liệu kế thừa chủ sở hữu từ doanh nghiệp; seller khác không thể đọc hoặc thay đổi bằng cách gọi API trực tiếp.
+- API trả `404` khi seller truy cập tài nguyên của seller khác để không làm lộ sự tồn tại của bản ghi.
