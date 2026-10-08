@@ -3,6 +3,7 @@ import type { RoomDetail, DocumentDetail } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
+import { request } from '../../api/workspace'
 
 function extOf(name: string) {
   const i = name.lastIndexOf('.')
@@ -23,6 +24,8 @@ export default function RoomPage({
     created ? 'Đã tạo phòng dữ liệu với sáu nhóm thư mục.' : '',
   )
   const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState('')
+  const [error, setError] = useState('')
   function onSaved(document: DocumentDetail) {
     setMessage(
       `Đã tải lên “${document.title}”, phiên bản ${document.current_version}.`,
@@ -30,6 +33,32 @@ export default function RoomPage({
     setUploading(false)
     setSelected(document.id)
     result.retry()
+  }
+  async function deleteDocument(document: RoomDetail['documents'][number]) {
+    if (!confirm(`Xóa tài liệu “${document.title}” và toàn bộ phiên bản? Thao tác này không thể hoàn tác.`)) return
+    setDeleting(document.id)
+    setError('')
+    try {
+      await request<void>(`/rooms/${id}/documents/${document.id}`, { method: 'DELETE' })
+      setMessage(`Đã xóa tài liệu “${document.title}”.`)
+      result.retry()
+    } catch (reason) {
+      setError((reason as Error).message)
+    } finally {
+      setDeleting('')
+    }
+  }
+  async function deleteRoom() {
+    if (!confirm(`Xóa phòng “${room.title}”, toàn bộ tài liệu và mọi phiên bản? Thao tác này không thể hoàn tác.`)) return
+    setDeleting('room')
+    setError('')
+    try {
+      await request<void>(`/rooms/${id}`, { method: 'DELETE' })
+      location.hash = '/rooms'
+    } catch (reason) {
+      setError((reason as Error).message)
+      setDeleting('')
+    }
   }
   if (!result.data) return <LoadState {...result} />
   const room = result.data
@@ -45,15 +74,17 @@ export default function RoomPage({
           <h2>{room.title}</h2>
           <a href={`#/companies/${room.company_id}`}>{room.company_name}</a>
         </div>
-        <button onClick={() => setUploading(!uploading)}>
-          {uploading ? 'Đóng form upload' : 'Thêm tài liệu'}
-        </button>
+        <div className="actions">
+          <button onClick={() => setUploading(!uploading)}>{uploading ? 'Đóng form upload' : 'Thêm tài liệu'}</button>
+          <button className="danger-button" onClick={deleteRoom} disabled={deleting === 'room'}>{deleting === 'room' ? 'Đang xóa…' : 'Xóa phòng'}</button>
+        </div>
       </div>
       {message && (
         <p role="status" className="success-box">
           {message}
         </p>
       )}
+      {error && <p role="alert" className="error-box">{error}</p>}
       {uploading && <UploadForm room={room} onSaved={onSaved} />}
       <div className="room-layout three">
         <aside className="folder-list" aria-label="Nhóm thư mục">
@@ -84,6 +115,7 @@ export default function RoomPage({
           {documents.length === 0 ? (
             <p className="empty panel">Chưa có tài liệu trong nhóm này.</p>
           ) : (
+<<<<<<< Updated upstream
             <div className="table-wrap">
               <table className="data-table">
                 <thead>
@@ -121,6 +153,24 @@ export default function RoomPage({
                 </tbody>
               </table>
             </div>
+=======
+            documents.map((document) => (
+              <article className="record panel document-record" key={document.id}>
+                <div>
+                  <h2>{document.title}</h2>
+                  <p>{document.latest.filename}</p>
+                  <p>
+                    Phiên bản {document.current_version} ·{' '}
+                    {(document.latest.size_bytes / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <div className="document-record-actions">
+                  <a className="button-link" href={`#/rooms/${id}/documents/${document.id}`}>Xem & phiên bản</a>
+                  <button className="danger-button" onClick={() => deleteDocument(document)} disabled={deleting === document.id}>{deleting === document.id ? 'Đang xóa…' : 'Xóa'}</button>
+                </div>
+              </article>
+            ))
+>>>>>>> Stashed changes
           )}
         </div>
         <aside className="panel">

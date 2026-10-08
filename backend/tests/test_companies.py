@@ -47,6 +47,34 @@ def test_persistence_edit_and_stale_revision(client):
     assert client.post("/api/v1/companies", json=draft()).status_code == 409
 
 
+def test_delete_draft_company(client):
+    company = create(client)
+    path = f'/api/v1/companies/{company["id"]}'
+    assert client.delete(path).status_code == 204
+    assert client.get(path).status_code == 404
+    assert client.delete(path).status_code == 404
+
+
+def test_delete_company_with_room_is_blocked(client):
+    company = create(client)
+    room = client.post(
+        "/api/v1/rooms",
+        json={"company_id": company["id"], "title": "Phòng dữ liệu cần giữ"},
+    )
+    assert room.status_code == 201, room.text
+    response = client.delete(f'/api/v1/companies/{company["id"]}')
+    assert response.status_code == 409
+    assert "phòng dữ liệu" in response.json()["detail"]
+
+
+def test_company_and_room_routes_enforce_login_role(client):
+    login = client.post("/api/v1/auth/login", json={"username": "buyer", "password": "vault-demo"})
+    buyer = {"Authorization": f'Bearer {login.json()["access_token"]}'}
+    assert client.get("/api/v1/companies", headers=buyer).status_code == 403
+    assert client.post("/api/v1/companies", json={"company_name": {"value": "Not allowed"}}, headers=buyer).status_code == 403
+    assert client.get("/api/v1/rooms", headers=buyer).status_code == 403
+
+
 def test_preview_backend_allowlist_and_missing_vs_zero(client):
     company = create(client)
     path = f'/api/v1/companies/{company["id"]}/preview'

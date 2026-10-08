@@ -64,3 +64,14 @@ class DocumentVersion(Base):
     storage_key: Mapped[str] = mapped_column(String(40), unique=True)
     note: Mapped[str] = mapped_column(String(1000), default="")
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Deal(Base):
+    __tablename__ = "deals"
+    __table_args__ = (CheckConstraint("revision >= 1", name="ck_deal_revision"),)
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    title: Mapped[str] = mapped_column(String(200))
+    state: Mapped[dict] = mapped_column(JSONB)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

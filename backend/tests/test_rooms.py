@@ -146,3 +146,27 @@ def test_missing_blob_is_reported_without_losing_metadata(client):
 def test_streamed_request_body_limit(client):
     response = client.post("/api/v1/companies", content=iter([b"X" * 34000, b"Y" * 34000]), headers={"Content-Type": "application/json"})
     assert response.status_code == 413, response.text
+
+
+def test_delete_document_removes_all_versions_and_blobs(client):
+    room = new_room(client)
+    document = upload(client, room).json()
+    path = f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}'
+    assert client.post(path + "/versions", files={"file": ("v2.png", png("blue"))}).status_code == 201
+    blobs = list(client.app.state.settings.upload_directory.glob("*.blob"))
+    assert len(blobs) == 2
+    assert client.delete(path).status_code == 204
+    assert client.get(path).status_code == 404
+    assert client.get(f'/api/v1/rooms/{room["id"]}').json()["documents"] == []
+    assert all(not blob.exists() for blob in blobs)
+
+
+def test_delete_room_removes_documents_versions_and_blobs(client):
+    room = new_room(client)
+    upload(client, room)
+    upload(client, room, name="second.png", folder="TECHNOLOGY_IP")
+    blobs = list(client.app.state.settings.upload_directory.glob("*.blob"))
+    assert len(blobs) == 2
+    assert client.delete(f'/api/v1/rooms/{room["id"]}').status_code == 204
+    assert client.get(f'/api/v1/rooms/{room["id"]}').status_code == 404
+    assert all(not blob.exists() for blob in blobs)

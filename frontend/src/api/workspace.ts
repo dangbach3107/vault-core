@@ -86,5 +86,15 @@ export async function request<T>(
     }
     throw new Error(message)
   }
+<<<<<<< Updated upstream
+=======
+  if (response.status === 204) return undefined as T
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      'Màn này cần backend API đang chạy. Bản Vercel hiện chỉ dùng để demo Investor MVP bằng dữ liệu giả lập.',
+    )
+  }
+>>>>>>> Stashed changes
   return response.json() as Promise<T>
 }

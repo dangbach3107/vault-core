@@ -7,13 +7,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app.api.dependencies import database_session
-from backend.app.db.models import Company, utcnow
+from backend.app.db.models import Company, Room, utcnow
 from backend.app.schemas.company import (
     AnonymousPreview, CompanyInput, CompanyResponse, CompanySummary, CompanyUpdate,
     IdentifiedPreview, RestrictedPreview,
 )
 from backend.app.services.profiles import changed_verified_facts, preview, response
 from backend.app.schemas.company import StrictModel
+from backend.app.core.auth import require_roles
+from backend.app.schemas.auth import UserResponse
 
 class ApiError(StrictModel):
     detail: str
@@ -24,6 +26,8 @@ router = APIRouter(prefix="/companies", tags=["Internal company drafts"], respon
     409: {"model": ApiError}, 503: {"model": ApiError},
 })
 DB = Annotated[Session, Depends(database_session)]
+CompanyReader = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN", "LEGAL"))]
+CompanyEditor = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN"))]
 
 
 def find_company(session: Session, company_id: UUID, lock: bool = False) -> Company:
@@ -43,7 +47,7 @@ def save(session: Session):
 
 
 @router.get("", response_model=list[CompanySummary], operation_id="list_companies")
-def list_companies(session: DB, q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
+def list_companies(session: DB, user: CompanyReader, q: str = Query(default="", max_length=200), offset: int = Query(default=0, ge=0), limit: int = Query(default=50, ge=1, le=100)):
     query = select(Company).order_by(Company.updated_at.desc(), Company.id).offset(offset).limit(limit)
     if q.strip():
         query = query.where(or_(Company.name.icontains(q.strip(), autoescape=True), Company.tax_id.icontains(q.strip(), autoescape=True)))
@@ -51,7 +55,7 @@ def list_companies(session: DB, q: str = Query(default="", max_length=200), offs
 
 
 @router.post("", response_model=CompanyResponse, status_code=201, operation_id="create_company")
-def create_company(body: CompanyInput, session: DB):
+def create_company(body: CompanyInput, session: DB, user: CompanyEditor):
     row = Company(alias=f"VAULT-{uuid4().hex[:12].upper()}", name=body.company_name.value, tax_id=body.tax_id.value, profile=body.model_dump(mode="json"))
     session.add(row)
     save(session)
@@ -59,12 +63,12 @@ def create_company(body: CompanyInput, session: DB):
 
 
 @router.get("/{company_id}", response_model=CompanyResponse, operation_id="get_company")
-def get_company(company_id: UUID, session: DB):
+def get_company(company_id: UUID, session: DB, user: CompanyReader):
     return response(find_company(session, company_id))
 
 
 @router.put("/{company_id}", response_model=CompanyResponse, operation_id="update_company")
-def update_company(company_id: UUID, body: CompanyUpdate, session: DB):
+def update_company(company_id: UUID, body: CompanyUpdate, session: DB, user: CompanyEditor):
     row = find_company(session, company_id, lock=True)
     if row.revision != body.expected_revision:
         raise HTTPException(409, "Hồ sơ đã được sửa ở nơi khác. Tải lại trước khi sửa tiếp.")
@@ -78,6 +82,18 @@ def update_company(company_id: UUID, body: CompanyUpdate, session: DB):
     return response(row)
 
 
+@router.delete("/{company_id}", status_code=204, operation_id="delete_company")
+def delete_company(company_id: UUID, session: DB, user: CompanyEditor):
+    row = find_company(session, company_id, lock=True)
+    if session.scalar(select(Room.id).where(Room.company_id == company_id).limit(1)) is not None:
+        raise HTTPException(
+            409,
+            "Hồ sơ đang có phòng dữ liệu. MVP không tự xoá tài liệu; hãy giữ hồ sơ để bảo toàn dữ liệu.",
+        )
+    session.delete(row)
+    session.commit()
+
+
 @router.get("/{company_id}/preview/{layer}", response_model=AnonymousPreview | IdentifiedPreview | RestrictedPreview, operation_id="preview_company")
-def preview_company(company_id: UUID, layer: Annotated[int, Path(ge=1, le=3)], session: DB):
+def preview_company(company_id: UUID, layer: Annotated[int, Path(ge=1, le=3)], session: DB, user: CompanyReader):
     return preview(find_company(session, company_id), layer)

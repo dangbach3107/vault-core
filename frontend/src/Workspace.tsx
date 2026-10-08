@@ -6,6 +6,7 @@ import CompanyDetail from './features/profiles/CompanyDetail'
 import RoomList from './features/rooms/RoomList'
 import RoomPage from './features/rooms/RoomPage'
 import DocumentPage from './features/rooms/DocumentPage'
+<<<<<<< Updated upstream
 import './workspace.css'
 
 function pathOf(hash: string) {
@@ -51,15 +52,174 @@ function titleOf(path: string) {
   if (path.startsWith('/rooms/') && path !== '/rooms') return 'Phòng dữ liệu'
   if (path === '/rooms') return 'Phòng dữ liệu'
   return 'Hồ sơ doanh nghiệp'
+=======
+import InvestorMvp from './features/investor-mvp/InvestorMvp'
+import DealList from './features/deals/DealList'
+import VaultHome from './features/vault/VaultHome'
+import AccessWorkspace from './features/access/AccessWorkspace'
+import {
+  hasConfiguredBackend,
+  getAuthSession,
+  setAuthSession,
+  type AuthSession,
+} from './api/config'
+import { request } from './api/workspace'
+import './workspace.css'
+
+type Role = NonNullable<AuthSession>['user']['role']
+
+const navigation: { label: string; href: string; roles: Role[] }[] = [
+  { label: 'Tổng quan', href: '#/vault', roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD', 'FINANCE'] },
+  { label: 'Deals', href: '#/deals', roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD', 'FINANCE'] },
+  { label: 'Disclosure approvals', href: '#/disclosures', roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'] },
+  { label: 'Doanh nghiệp', href: '#/companies', roles: ['SELLER', 'VAULT_ADMIN', 'LEGAL'] },
+  { label: 'Phòng dữ liệu', href: '#/rooms', roles: ['SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD'] },
+  { label: 'Kết nối API', href: '#/health', roles: ['VAULT_ADMIN'] },
+]
+
+function routeAllowed(path: string, role?: Role) {
+  if (!role || path === '/investor-mvp') return false
+  if (path === '/vault') return true
+  if (path === '/disclosures' || path === '/access') return ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'].includes(role)
+  if (path === '/companies' || path.startsWith('/companies/')) return ['SELLER', 'VAULT_ADMIN', 'LEGAL'].includes(role)
+  if (path === '/rooms' || path.startsWith('/rooms/')) return ['SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD'].includes(role)
+  if (path === '/health') return role === 'VAULT_ADMIN'
+  if (path === '/deals' || path.startsWith('/deals/')) return true
+  return false
+}
+
+function isHostedWithoutBackend() {
+  return location.hostname.endsWith('vercel.app') && !hasConfiguredBackend()
+}
+
+function needsBackend(path: string) {
+  return (
+    path === '/companies' ||
+    path === '/companies/new' ||
+    path.startsWith('/companies/') ||
+    path === '/rooms' ||
+    path.startsWith('/rooms/') ||
+    path === '/deals' ||
+    path.startsWith('/deals/') ||
+    path === '/vault' ||
+    path === '/access' || path === '/disclosures' ||
+    path === '/health'
+  )
+}
+
+function BackendRequiredNotice({ target }: { target: string }) {
+  return (
+    <section className="panel backend-required">
+      <p className="eyebrow">Frontend-only demo</p>
+      <h1>Màn này cần backend riêng</h1>
+      <p>
+        Link Vercel hiện chỉ deploy frontend để demo luồng A–Z. Các màn{' '}
+        <strong>Doanh nghiệp</strong>, <strong>Phòng dữ liệu</strong> và{' '}
+        <strong>Kết nối API</strong> cần FastAPI/PostgreSQL chạy riêng nên không
+        dùng trực tiếp trên Vercel-only deployment.
+      </p>
+      <p>
+        Để demo cho đồng nghiệp hoặc nhà đầu tư, hãy dùng màn{' '}
+        <strong>Investor MVP</strong>. Màn đó dùng dữ liệu giả lập và không cần
+        backend.
+      </p>
+      <div className="actions">
+        <a className="button-link" href="#/investor-mvp">
+          Mở Investor MVP
+        </a>
+        <span className="muted">Route vừa mở: {target}</span>
+      </div>
+    </section>
+  )
+}
+
+const demoAccounts = [
+  ['buyer', 'Buyer'],
+  ['seller', 'Seller'],
+  ['admin', 'VAULT Admin'],
+  ['legal', 'Legal'],
+  ['tech', 'Tech DD'],
+  ['finance', 'Finance'],
+]
+
+function Login({ onLogin }: { onLogin: (session: AuthSession) => void }) {
+  const [username, setUsername] = useState('buyer')
+  const [password, setPassword] = useState('vault-demo')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  return (
+    <section className="panel login-panel">
+      <p className="eyebrow">Synthetic MVP access</p>
+      <h1>Đăng nhập VAULT theo vai trò</h1>
+      <p className="notice">
+        Tài khoản demo chỉ dùng dữ liệu giả lập; không phải SSO/MFA production.
+      </p>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault()
+          setBusy(true)
+          setError('')
+          try {
+            const session = await request<AuthSession>('/auth/login', {
+              method: 'POST',
+              body: JSON.stringify({ username, password }),
+            })
+            setAuthSession(session)
+            onLogin(session)
+            location.hash = '/vault'
+          } catch (reason) {
+            setError(
+              reason instanceof Error ? reason.message : 'Đăng nhập thất bại.',
+            )
+          } finally {
+            setBusy(false)
+          }
+        }}
+      >
+        <label>
+          Vai trò
+          <select
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          >
+            {demoAccounts.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label} ({value})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Mật khẩu demo
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
+        {error && (
+          <p className="error-box" role="alert">
+            {error}
+          </p>
+        )}
+        <button disabled={busy}>
+          {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+        </button>
+      </form>
+    </section>
+  )
+>>>>>>> Stashed changes
 }
 
 export default function Workspace() {
+  const [session, setSession] = useState<AuthSession | null>(getAuthSession())
   const [hash, setHash] = useState(location.hash)
   useEffect(() => {
     const change = () => setHash(location.hash)
     addEventListener('hashchange', change)
     return () => removeEventListener('hashchange', change)
   }, [])
+<<<<<<< Updated upstream
   const path = pathOf(hash)
   const parts = path.split('/').filter(Boolean)
   const params = new URLSearchParams(hash.split('?')[1] || '')
@@ -71,6 +231,26 @@ export default function Workspace() {
     )
   let screen = <CompanyList />
   if (path === '/companies/new') screen = <CompanyForm />
+=======
+  const hostedWithoutBackend = isHostedWithoutBackend()
+  const path =
+    hash.slice(1).split('?')[0] ||
+    (hostedWithoutBackend ? '/investor-mvp' : session ? '/vault' : '/companies')
+  const parts = path.split('/').filter(Boolean)
+  const params = new URLSearchParams(hash.split('?')[1] || '')
+  if (path === '/health' && !hostedWithoutBackend && session?.user.role === 'VAULT_ADMIN') return <App />
+  let screen = <CompanyList />
+  if (hostedWithoutBackend && needsBackend(path))
+    screen = <BackendRequiredNotice target={path} />
+  else if (path === '/investor-mvp')
+    screen = <InvestorMvp role={session?.user.role} />
+  else if (path === '/vault' && session) screen = <VaultHome user={session.user} />
+  else if (path === '/access' || path === '/disclosures') screen = <AccessWorkspace role={session?.user.role} initialDealId={params.get('deal') || undefined} />
+  else if (path === '/deals') screen = <DealList role={session?.user.role} />
+  else if (parts[0] === 'deals' && parts[1])
+    screen = <AccessWorkspace role={session?.user.role} initialDealId={parts[1]} />
+  else if (path === '/companies/new') screen = <CompanyForm />
+>>>>>>> Stashed changes
   else if (path === '/rooms')
     screen = <RoomList companyId={params.get('company') || undefined} />
   else if (parts[0] === 'rooms' && parts[1])
@@ -97,6 +277,7 @@ export default function Workspace() {
   const companiesActive = path.startsWith('/companies') || path === '/'
   const roomsActive = path.startsWith('/rooms')
   return (
+<<<<<<< Updated upstream
     <div className="app-frame">
       <aside className="sidebar">
         <a className="brand sidebar-brand" href="#/companies">
@@ -162,6 +343,48 @@ export default function Workspace() {
           <span>VAULT · Verified Access to Unlisted Listings & Transactions</span>
           <a href="#/health">Kết nối API</a>
         </footer>
+=======
+    <main className="shell workspace">
+      <header className="topbar">
+        <a className="brand" href="#/vault">
+          <span className="brand-mark">V</span>VAULT
+        </a>
+        <nav aria-label="Điều hướng chính">
+          {session && navigation.filter((item) => item.roles.includes(session.user.role)).map((item) => <a href={item.href} key={item.href}>{item.label}</a>)}
+        </nav>
+      </header>
+      <p className="local-note">
+        Bản thử nội bộ · Chỉ dùng dữ liệu giả lập
+        {hostedWithoutBackend
+          ? ' · Vercel chưa cấu hình backend, hãy dùng Investor MVP để test flow A–Z'
+          : hasConfiguredBackend()
+            ? ' · Hosted full-stack demo: frontend gọi backend public đã cấu hình'
+            : ''}
+      </p>
+      {session && (
+        <div className="session-bar">
+          <span>
+            Đăng nhập: <strong>{session.user.display_name}</strong> ·{' '}
+            {session.user.username}
+          </span>
+          <button
+            className="secondary"
+            onClick={() => {
+              setAuthSession(null)
+              setSession(null)
+            }}
+          >
+            Đăng xuất
+          </button>
+        </div>
+      )}
+      <div key={hash || path} className="workspace-content">
+        {hostedWithoutBackend ? screen : session && routeAllowed(path, session.user.role) ? screen : session ? (
+          <section className="panel forbidden"><p className="eyebrow">Không có quyền</p><h1>Role {session.user.display_name} không được mở chức năng này</h1><p>Hãy quay lại tổng quan để chọn đúng chức năng được cấp theo tài khoản đăng nhập.</p><a className="button-link" href="#/vault">Về tổng quan</a></section>
+        ) : (
+          <Login onLogin={setSession} />
+        )}
+>>>>>>> Stashed changes
       </div>
     </div>
   )

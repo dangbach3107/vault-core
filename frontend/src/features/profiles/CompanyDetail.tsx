@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Company, Fact, Preview } from '../../api/workspace'
+import { request } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import { fields, issueLabels, optionLabels, statusLabels } from './fields'
@@ -134,6 +135,8 @@ export default function CompanyDetail({
   const result = useLoad<Company>(`/companies/${id}`)
   const [tab, setTab] = useState<Tab>('overview')
   const [layer, setLayer] = useState(2)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   if (!result.data) return <LoadState {...result} />
   const company = result.data
   const items = factsOf(company)
@@ -177,15 +180,50 @@ export default function CompanyDetail({
             đã được kiểm toán.
           </p>
         </div>
+<<<<<<< Updated upstream
         <div className="context-actions">
           <a className="button-link ghost" href={`#/companies/${id}/edit`}>
             Chỉnh sửa
           </a>
           <button type="button" onClick={() => setTab('preview')}>
             Xem trước công bố
+=======
+        <div className="actions">
+          <a className="button-link" href={`#/companies/${id}/edit`}>
+            Sửa hồ sơ
+          </a>
+          <button
+            type="button"
+            className="danger"
+            disabled={deleting}
+            onClick={async () => {
+              if (!confirm('Xoá hồ sơ nháp này? Thao tác không thể hoàn tác.'))
+                return
+              setDeleting(true)
+              setDeleteError('')
+              try {
+                await request(`/companies/${id}`, { method: 'DELETE' })
+                location.hash = '/companies'
+              } catch (error) {
+                setDeleteError(
+                  error instanceof Error
+                    ? error.message
+                    : 'Không xoá được hồ sơ.',
+                )
+                setDeleting(false)
+              }
+            }}
+          >
+            {deleting ? 'Đang xoá…' : 'Xoá hồ sơ'}
+>>>>>>> Stashed changes
           </button>
         </div>
       </div>
+      {deleteError && (
+        <p className="error-box" role="alert">
+          {deleteError}
+        </p>
+      )}
       {saved && (
         <p className="success-box" role="status">
           Đã lưu hồ sơ.

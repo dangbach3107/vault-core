@@ -151,6 +151,12 @@ Kết quả đã xác minh: **36 kiểm tra Python đạt**, **8 kiểm tra giao
 
 ## API contract và cấu trúc
 
+### Deal Workspace MVP có lưu dữ liệu
+
+Route `#/investor-mvp` dùng API `/api/v1/deals` để tạo/tải một thương vụ synthetic và lưu các action qua PostgreSQL. Backend áp dụng gate cho L1/L2/NDA/L3, Indicative LOI trước VDR, Tech DD trước Definitive Offer, legal checklist trước closing, rồi mới ghi success fee/handoff. Nút reset và hoàn tất mẫu cũng cập nhật record backend. Chạy migration `0003` trước khi dùng; đây vẫn là MVP giả lập, chưa thay thế auth, audit bảo mật, e-sign, scanner hoặc VDR production.
+
+MVP có sáu tài khoản role: `buyer`, `seller`, `admin`, `legal`, `tech`, `finance`. Mật khẩu local mặc định là `vault-demo`; đổi bằng `DEMO_ROLE_PASSWORD` và đặt `DEMO_AUTH_SECRET` riêng khi chạy hosted demo. Token có hạn 8 giờ, mọi API có database yêu cầu đăng nhập và từng action chỉ chấp nhận đúng role. Cơ chế này dành cho synthetic MVP, không phải Rikkei SSO/MFA production.
+
 Backend là nguồn định nghĩa hợp đồng; frontend dùng types sinh tự động từ cùng OpenAPI:
 
 ```text

@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.db.session import build_engine, build_session_factory
+from backend.app.core.auth import current_user
 
 _engine_lock = Lock()
 
@@ -21,6 +22,19 @@ def database_session(request: Request) -> Generator[Session, None, None]:
     origin = request.headers.get("origin")
     if request.headers.get("sec-fetch-site") == "cross-site" or (origin and urlsplit(origin).hostname not in {"127.0.0.1", "localhost"}):
         raise HTTPException(403, "Không chấp nhận yêu cầu từ trang bên ngoài.")
+<<<<<<< Updated upstream
+=======
+    if request.headers.get("sec-fetch-site") == "cross-site" and origin and not origin_allowed(settings, origin):
+        raise HTTPException(403, "Không chấp nhận yêu cầu từ trang bên ngoài.")
+
+    password = settings.demo_password.get_secret_value()
+    if password and not secrets.compare_digest(request.headers.get("x-demo-password", ""), password):
+        raise HTTPException(401, "Cần nhập demo password để dùng backend preview.")
+
+    # Every database-backed MVP route requires a signed role session.
+    current_user(request)
+
+>>>>>>> Stashed changes
     with _engine_lock:
         if request.app.state.session_factory is None:
             try:
