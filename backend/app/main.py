@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.health import health_router
 from backend.app.core.config import Settings
 from backend.app.api.companies import router as company_router
 from backend.app.api.rooms import router as room_router
 from backend.app.api.body_limit import BodyLimitMiddleware
-from fastapi.middleware.cors import CORSMiddleware
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,11 +27,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     application.state.engine = None
     application.state.session_factory = None
-
-    origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
+    cors_list = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=origins if "*" not in origins else ["*"],
+        allow_origins=cors_list if cors_list else ["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -40,6 +39,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(health_router(settings), prefix=settings.api_v1_str)
     application.include_router(company_router, prefix=settings.api_v1_str)
     application.include_router(room_router, prefix=settings.api_v1_str)
+
+    frontend_dist = settings.upload_directory.parents[1] / "frontend" / "dist"
+    if frontend_dist.is_dir():
+        from fastapi.staticfiles import StaticFiles
+        application.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
     return application
 
 
