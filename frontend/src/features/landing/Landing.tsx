@@ -181,6 +181,144 @@ function Counter({ to, suffix }: { to: number; suffix: string }) {
   )
 }
 
+const DOT_STEP = 14
+
+function HeroBackdrop() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [videoSrc, setVideoSrc] = useState('')
+
+  // Optional: drop a looping clip at public/hero.mp4 and it is used automatically.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/hero.mp4', { method: 'HEAD' })
+      .then((response) => {
+        const type = response.headers.get('content-type') || ''
+        if (!cancelled && response.ok && type.startsWith('video/'))
+          setVideoSrc('/hero.mp4')
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const context = canvas?.getContext('2d')
+    if (!canvas || !context) return
+    const still = reduceMotion()
+    let width = 0
+    let height = 0
+    let frame = 0
+    let running = true
+    let visible = true
+    const pointer = { x: -9999, y: -9999 }
+
+    const resize = () => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2)
+      width = canvas.clientWidth
+      height = canvas.clientHeight
+      canvas.width = Math.round(width * ratio)
+      canvas.height = Math.round(height * ratio)
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    }
+
+    const draw = (now: number) => {
+      const t = now / 1000
+      context.clearRect(0, 0, width, height)
+      context.fillStyle = '#570b18'
+      for (let y = DOT_STEP / 2; y < height; y += DOT_STEP) {
+        const rowMask = Math.pow(y / height, 1.35)
+        for (let x = DOT_STEP / 2; x < width; x += DOT_STEP) {
+          const wave =
+            0.5 +
+            0.5 *
+              Math.sin(
+                x * 0.007 + t * 0.7 + Math.sin(y * 0.006 - t * 0.45) * 2.2,
+              )
+          const side = 0.35 + 0.65 * (x / width)
+          let size = wave * rowMask * side
+          const dx = x - pointer.x
+          const dy = y - pointer.y
+          const near = 1 - Math.min(1, Math.hypot(dx, dy) / 150)
+          size = Math.min(1, size + near * near * 0.8)
+          const radius = size * (DOT_STEP / 2 - 1)
+          if (radius < 0.4) continue
+          context.beginPath()
+          context.arc(x, y, radius, 0, Math.PI * 2)
+          context.fill()
+        }
+      }
+    }
+
+    const loop = (now: number) => {
+      if (!running) return
+      if (visible) draw(now)
+      frame = requestAnimationFrame(loop)
+    }
+
+    const onMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      pointer.x = event.clientX - rect.left
+      pointer.y = event.clientY - rect.top
+    }
+    const onLeave = () => {
+      pointer.x = pointer.y = -9999
+    }
+    const onVisibility = () => {
+      running = !document.hidden
+      if (running && !still) frame = requestAnimationFrame(loop)
+    }
+
+    resize()
+    const observer = new ResizeObserver(() => {
+      resize()
+      if (still) draw(0)
+    })
+    observer.observe(canvas)
+    const inView =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver(([entry]) => {
+            visible = entry.isIntersecting
+          })
+    inView?.observe(canvas)
+
+    if (still) draw(0)
+    else {
+      frame = requestAnimationFrame(loop)
+      addEventListener('pointermove', onMove, { passive: true })
+      canvas.parentElement?.addEventListener('pointerleave', onLeave)
+      document.addEventListener('visibilitychange', onVisibility)
+    }
+    return () => {
+      running = false
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      inView?.disconnect()
+      removeEventListener('pointermove', onMove)
+      canvas.parentElement?.removeEventListener('pointerleave', onLeave)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
+
+  return (
+    <div className="lp-backdrop" aria-hidden="true">
+      {videoSrc && (
+        <video
+          className="lp-video"
+          src={videoSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      )}
+      <canvas ref={canvasRef} className="lp-canvas" />
+    </div>
+  )
+}
+
 function Svg({ d }: { d: string }) {
   return (
     <svg
@@ -242,7 +380,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
 
   return (
     <div className="lp" ref={rootRef}>
-      <header className={`lp-nav ${scrolled ? 'is-solid' : ''}`}>
+      <header className={`lp-nav ${scrolled ? 'is-solid' : 'is-light'}`}>
         <a className="lp-brand" href="#/welcome" aria-label="VAULT trang chủ">
           <span className="lp-brand-mark" aria-hidden="true">
             V
@@ -269,9 +407,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       </header>
 
       <section className="lp-hero">
-        <div className="lp-orb lp-orb-a" aria-hidden="true" />
-        <div className="lp-orb lp-orb-b" aria-hidden="true" />
-        <div className="lp-grid" aria-hidden="true" />
+        <HeroBackdrop />
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
             <p className="lp-pill lp-rise" style={{ animationDelay: '0ms' }}>
