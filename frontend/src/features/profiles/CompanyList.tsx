@@ -153,7 +153,7 @@ export default function CompanyList() {
             alignItems: 'center',
           }}
         >
-          <strong style={{ fontSize: '14px', color: '#1a3c2b' }}>
+          <strong style={{ fontSize: '14px', color: 'var(--text)' }}>
             🎯 Bộ lọc theo Khẩu vị đầu tư (Investment Mandate)
           </strong>
           {hasActiveFilters && (
@@ -263,7 +263,13 @@ export default function CompanyList() {
         </div>
 
         <div className="filter-actions-row">
-          <span style={{ fontSize: '13px', color: '#3d5244', fontWeight: 600 }}>
+          <span
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-2)',
+              fontWeight: 600,
+            }}
+          >
             Tìm thấy {filtered.length} cơ hội đầu tư phù hợp khẩu vị
           </span>
           <span className="muted" style={{ fontSize: '12px' }}>

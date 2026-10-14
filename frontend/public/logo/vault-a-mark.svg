@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="VAULT"><defs><linearGradient id="vgam" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d00022"/><stop offset="1" stop-color="#7a0014"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#vgam)"/>
+  <g fill="none" stroke-width="5" stroke-linejoin="miter" stroke-linecap="butt">
+    <path d="M12 15 32 47 52 15" stroke="#f5f5f5"/>
+    <path d="M17.6 15 32 38 46.4 15" stroke="#f2a3b0"/>
+    <path d="M23.25 15 32 29 40.75 15" stroke="#f2a3b0" stroke-opacity=".55"/>
+  </g></svg>

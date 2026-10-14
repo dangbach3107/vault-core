@@ -1,0 +1,36 @@
+/* Role avatars: one colour + one glyph per role. */
+.ra {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 4px 12px rgba(30, 0, 8, 0.18);
+}
+
+.ra svg {
+  width: 52%;
+  height: 52%;
+}
+
+.ra-BUYER {
+  background: linear-gradient(135deg, #e5677c, #d00022);
+}
+.ra-SELLER {
+  background: linear-gradient(135deg, #cd4a60, #a8344a);
+}
+.ra-VAULT_ADMIN {
+  background: linear-gradient(135deg, #a8001b, #4a000c);
+}
+.ra-LEGAL {
+  background: linear-gradient(135deg, #9a9a9c, #5d5d5f);
+}
+.ra-TECH_DD {
+  background: linear-gradient(135deg, #818182, #3f3f41);
+}
+.ra-FINANCE {
+  color: #a8001b;
+  background: linear-gradient(135deg, #ffdde2, #f2a3b0);
+}

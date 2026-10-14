@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import './landing.css'
+import Logo from '../../components/Logo'
 
 const TRY_HREF = '#/vault'
 
@@ -106,7 +107,7 @@ const stats: [number, string, string][] = [
   [3, '', 'lớp tiết lộ thông tin'],
   [6, '', 'vai trò phân quyền'],
   [15, '', 'bước từ yêu cầu đến closing'],
-  [100, '%', 'dữ liệu demo giả lập'],
+  [10, ' MB', 'tối đa cho mỗi tài liệu tải lên'],
 ]
 
 const reduceMotion = () =>
@@ -181,6 +182,129 @@ function Counter({ to, suffix }: { to: number; suffix: string }) {
   )
 }
 
+function VideoIcon({ name }: { name: 'play' | 'pause' | 'sound' | 'muted' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {name === 'play' && (
+        <path d="M8.5 5.8v12.4a.6.6 0 0 0 .9.5l9.4-6.2a.6.6 0 0 0 0-1L9.4 5.3a.6.6 0 0 0-.9.5z" />
+      )}
+      {name === 'pause' && (
+        <>
+          <path d="M8.5 5.5v13" />
+          <path d="M15.5 5.5v13" />
+        </>
+      )}
+      {(name === 'sound' || name === 'muted') && (
+        <path d="M4.5 9.7h2.9l4.1-3.6a.5.5 0 0 1 .8.4v11a.5.5 0 0 1-.8.4l-4.1-3.6H4.5a.5.5 0 0 1-.5-.5v-3.6a.5.5 0 0 1 .5-.5z" />
+      )}
+      {name === 'sound' && (
+        <>
+          <path d="M15.6 9.2a4 4 0 0 1 0 5.6" />
+          <path d="M18.2 6.7a7.5 7.5 0 0 1 0 10.6" />
+        </>
+      )}
+      {name === 'muted' && <path d="m16 9.8 4.4 4.4m0-4.4L16 14.2" />}
+    </svg>
+  )
+}
+
+function VideoShowcase() {
+  const ref = useRef<HTMLVideoElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const still = reduceMotion()
+  // Sharper 1080p clip on wide screens, lighter 720p on phones and small windows.
+  const [src] = useState(() =>
+    typeof matchMedia === 'function' && matchMedia('(min-width: 900px)').matches
+      ? '/vault-intro-1080.mp4'
+      : '/vault-intro.mp4',
+  )
+
+  // Play while on screen, pause when scrolled away (saves battery and bandwidth).
+  useEffect(() => {
+    const video = ref.current
+    if (!video || still || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) video.play?.()?.catch?.(() => undefined)
+        else video.pause?.()
+      },
+      { threshold: 0.45 },
+    )
+    observer.observe(video)
+    return () => observer.disconnect()
+  }, [still])
+
+  const toggle = () => {
+    const video = ref.current
+    if (!video) return
+    if (video.paused) video.play?.()?.catch?.(() => undefined)
+    else video.pause?.()
+  }
+
+  // Browsers only allow sound after a user gesture, so the clip starts muted.
+  const toggleSound = () => {
+    const video = ref.current
+    if (!video) return
+    video.muted = !video.muted
+    if (!video.muted) video.volume = 0.8
+    setMuted(video.muted)
+  }
+
+  return (
+    <div className="lp-video-frame">
+      <video
+        ref={ref}
+        className="lp-video-el"
+        src={src}
+        poster="/vault-intro-poster.jpg"
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        controls={still}
+        aria-label="Video giới thiệu VAULT"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onClick={still ? undefined : toggle}
+      />
+      {!still && (
+        <div className="lp-video-ctrls">
+          <button
+            type="button"
+            className="lp-video-btn lp-video-pause"
+            onClick={toggle}
+            data-tip={playing ? 'Tạm dừng' : 'Phát'}
+            aria-label={playing ? 'Tạm dừng video' : 'Phát video'}
+          >
+            <VideoIcon name={playing ? 'pause' : 'play'} />
+          </button>
+          <button
+            type="button"
+            className="lp-video-btn"
+            onClick={toggleSound}
+            data-tip={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            aria-pressed={!muted}
+            aria-label={muted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+          >
+            <VideoIcon name={muted ? 'muted' : 'sound'} />
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Svg({ d }: { d: string }) {
   return (
     <svg
@@ -244,12 +368,12 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
     <div className="lp" ref={rootRef}>
       <header className={`lp-nav ${scrolled ? 'is-solid' : ''}`}>
         <a className="lp-brand" href="#/welcome" aria-label="VAULT trang chủ">
-          <span className="lp-brand-mark" aria-hidden="true">
-            V
-          </span>
-          VAULT
+          <Logo variant="white" height={38} />
         </a>
         <nav className="lp-links" aria-label="Điều hướng chính">
+          <a href="#lp-video" onClick={goTo('lp-video')}>
+            Video
+          </a>
           <a href="#lp-features" onClick={goTo('lp-features')}>
             Tính năng
           </a>
@@ -301,9 +425,6 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
                 Xem cách hoạt động
               </a>
             </div>
-            <p className="lp-note lp-rise" style={{ animationDelay: '340ms' }}>
-              Bản demo nội bộ, chỉ dùng dữ liệu giả lập.
-            </p>
           </div>
 
           <div className="lp-visual" aria-hidden="true">
@@ -373,6 +494,16 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             <span>{label}</span>
           </Reveal>
         ))}
+      </section>
+
+      <section className="lp-section lp-video" id="lp-video">
+        <Reveal className="lp-head">
+          <p className="lp-eyebrow">Xem nhanh 30 giây</p>
+          <h2>VAULT hoạt động như thế nào.</h2>
+        </Reveal>
+        <Reveal>
+          <VideoShowcase />
+        </Reveal>
       </section>
 
       <section className="lp-section" id="lp-features">
@@ -489,10 +620,10 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       <section className="lp-final">
         <div className="lp-orb lp-orb-c" aria-hidden="true" />
         <Reveal>
-          <h2>Sẵn sàng thử một thương vụ mẫu?</h2>
+          <h2>Sẵn sàng bắt đầu một thương vụ?</h2>
           <p>
-            Đăng nhập bằng một trong sáu vai trò demo và đi hết luồng từ A đến
-            Z.
+            Chọn vai trò của bạn và đi hết luồng từ yêu cầu đến closing trên một
+            nền tảng duy nhất.
           </p>
           <a className="lp-btn lp-btn-primary" href={TRY_HREF}>
             {tryLabel}
@@ -505,7 +636,6 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         <span>
           © VAULT · Verified Access to Unlisted Listings & Transactions
         </span>
-        <span>Bản demo nội bộ · dữ liệu giả lập</span>
       </footer>
     </div>
   )

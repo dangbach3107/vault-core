@@ -11,13 +11,16 @@ import DealList from './features/deals/DealList'
 import VaultHome from './features/vault/VaultHome'
 import AccessWorkspace from './features/access/AccessWorkspace'
 import Landing from './features/landing/Landing'
+import Logo from './components/Logo'
+import RoleAvatar from './components/RoleAvatar'
+import { ROLE_META } from './features/auth/roles'
+import Login from './features/auth/Login'
 import {
   hasConfiguredBackend,
   getAuthSession,
   setAuthSession,
   type AuthSession,
 } from './api/config'
-import { request } from './api/workspace'
 
 type Role = NonNullable<AuthSession>['user']['role']
 
@@ -194,7 +197,7 @@ function titleOf(path: string) {
 function BackendRequiredNotice({ target }: { target: string }) {
   return (
     <section className="panel backend-required">
-      <p className="eyebrow">Frontend-only demo</p>
+      <p className="eyebrow">Chưa kết nối máy chủ</p>
       <h2>Màn này cần backend riêng</h2>
       <p>
         Link Vercel hiện chỉ deploy frontend để demo luồng A–Z. Các màn{' '}
@@ -213,83 +216,6 @@ function BackendRequiredNotice({ target }: { target: string }) {
         </a>
         <span className="muted">Route vừa mở: {target}</span>
       </div>
-    </section>
-  )
-}
-
-const demoAccounts = [
-  ['buyer', 'Buyer'],
-  ['seller', 'Seller'],
-  ['admin', 'VAULT Admin'],
-  ['legal', 'Legal'],
-  ['tech', 'Tech DD'],
-  ['finance', 'Finance'],
-]
-
-function Login({ onLogin }: { onLogin: (session: AuthSession) => void }) {
-  const [username, setUsername] = useState('buyer')
-  const [password, setPassword] = useState('vault-demo')
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  return (
-    <section className="panel login-panel">
-      <p className="eyebrow">Synthetic MVP access</p>
-      <h1>Đăng nhập VAULT theo vai trò</h1>
-      <p className="notice">
-        Tài khoản demo chỉ dùng dữ liệu giả lập; không phải SSO/MFA production.
-      </p>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault()
-          setBusy(true)
-          setError('')
-          try {
-            const session = await request<AuthSession>('/auth/login', {
-              method: 'POST',
-              body: JSON.stringify({ username, password }),
-            })
-            setAuthSession(session)
-            onLogin(session)
-            location.hash = '/vault'
-          } catch (reason) {
-            setError(
-              reason instanceof Error ? reason.message : 'Đăng nhập thất bại.',
-            )
-          } finally {
-            setBusy(false)
-          }
-        }}
-      >
-        <label>
-          Vai trò
-          <select
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          >
-            {demoAccounts.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label} ({value})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Mật khẩu demo
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
-        {error && (
-          <p className="error-box" role="alert">
-            {error}
-          </p>
-        )}
-        <button disabled={busy}>
-          {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
-        </button>
-      </form>
     </section>
   )
 }
@@ -358,34 +284,16 @@ export default function Workspace() {
       </p>
     )
   const crumbs = crumb(path)
-  if (!session && !hostedWithoutBackend)
-    return (
-      <main className="auth-shell">
-        <div className="auth-stack">
-          <span className="brand">
-            <span className="brand-mark" aria-hidden="true">
-              V
-            </span>
-            VAULT
-          </span>
-          <Login onLogin={setSession} />
-          <p className="auth-foot">
-            VAULT · Verified Access to Unlisted Listings & Transactions
-          </p>
-        </div>
-      </main>
-    )
+  if (!session && !hostedWithoutBackend) return <Login onLogin={setSession} />
   return (
     <div className="app-frame">
       <aside className="sidebar">
         <a
           className="brand sidebar-brand"
           href={session ? '#/vault' : '#/companies'}
+          aria-label="VAULT trang chủ"
         >
-          <span className="brand-mark" aria-hidden="true">
-            V
-          </span>
-          VAULT
+          <Logo height={34} />
         </a>
         <nav className="sidebar-nav" aria-label="Điều hướng chính">
           {navigation
@@ -411,19 +319,21 @@ export default function Workspace() {
         </nav>
         <div className="sidebar-foot">
           <div className="user-chip">
-            <span className="avatar" aria-hidden="true">
-              {session
-                ? session.user.display_name.slice(0, 2).toUpperCase()
-                : 'ĐN'}
-            </span>
+            {session ? (
+              <RoleAvatar role={session.user.role} size={38} />
+            ) : (
+              <span className="avatar" aria-hidden="true">
+                KH
+              </span>
+            )}
             <div className="user-meta">
               <strong>
                 {session ? session.user.display_name : 'Chưa đăng nhập'}
               </strong>
               <span>
                 {session
-                  ? `Đang đăng nhập · ${session.user.username}`
-                  : 'Bản thử nội bộ'}
+                  ? `${ROLE_META[session.user.role].label} · ${session.user.username}`
+                  : 'Khách'}
               </span>
             </div>
           </div>
@@ -458,14 +368,12 @@ export default function Workspace() {
               </span>
             ))}
           </nav>
-          <div className="env-note">
-            {hostedWithoutBackend
-              ? 'Vercel chưa cấu hình backend, hãy dùng Investor MVP để test flow A–Z'
-              : hasConfiguredBackend()
-                ? 'Hosted full-stack demo'
-                : null}
-            <span className="env-pill">Demo nội bộ · dữ liệu giả lập</span>
-          </div>
+          {session ? (
+            <div className="topbar-user">
+              <RoleAvatar role={session.user.role} size={28} />
+              <span>{ROLE_META[session.user.role].label}</span>
+            </div>
+          ) : null}
         </div>
         <header className="context-bar">
           <h1>{titleOf(path)}</h1>

@@ -71,7 +71,7 @@ export default function RoomPage({
     <section>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">THƯƠNG VỤ · PHÒNG DỮ LIỆU NỘI BỘ</p>
+          <p className="eyebrow">THƯƠNG VỤ · PHÒNG DỮ LIỆU</p>
           <h2>{room.title}</h2>
           <a href={`#/companies/${room.company_id}`}>{room.company_name}</a>
         </div>

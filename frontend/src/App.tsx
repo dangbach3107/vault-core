@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getHealth, type HealthResponse } from './api/client'
+import Logo from './components/Logo'
 
 type Connection =
   | { state: 'loading' }
@@ -38,12 +39,8 @@ export default function App() {
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="#/companies" aria-label="VAULT trang chủ">
-          <span className="brand-mark" aria-hidden="true">
-            V
-          </span>{' '}
-          VAULT
+          <Logo height={32} />
         </a>
-        <span className="environment">Môi trường demo</span>
       </header>
       <section className="connection-card" aria-labelledby="page-title">
         <p className="eyebrow">BỘ KHUNG KỸ THUẬT · 01</p>

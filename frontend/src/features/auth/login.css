@@ -1,0 +1,446 @@
+/* Login screen: split layout, aurora panel, role cards. */
+.lg {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  min-height: 100vh;
+  background: #f7f7f7;
+}
+
+/* ---------- Brand side ---------- */
+.lg-side {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 56px;
+  color: #fff;
+  background: linear-gradient(155deg, #a8001b, #4a000c 70%);
+  overflow: hidden;
+}
+
+.lg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  animation: lg-drift 16s ease-in-out infinite alternate;
+}
+.lg-blob-a {
+  width: 520px;
+  height: 520px;
+  top: -140px;
+  right: -120px;
+  background: #e87889;
+}
+.lg-blob-b {
+  width: 420px;
+  height: 420px;
+  bottom: -120px;
+  left: -80px;
+  background: #e87889;
+  opacity: 0.45;
+  animation-delay: -6s;
+}
+.lg-blob-c {
+  width: 320px;
+  height: 320px;
+  top: 40%;
+  left: 35%;
+  background: #d00022;
+  animation-delay: -11s;
+}
+
+@keyframes lg-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(50px, 36px, 0) scale(1.14);
+  }
+}
+
+.lg-brand {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  text-decoration: none;
+}
+.lg-brand:hover {
+  color: #fff;
+  text-decoration: none;
+}
+.lg-pitch {
+  position: relative;
+  max-width: 520px;
+  animation: lg-rise 0.9s var(--ease) both 0.1s;
+}
+.lg-pitch h2 {
+  margin: 0 0 28px;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(34px, 3.6vw, 52px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.lg-pitch em {
+  font-style: italic;
+  color: #fcc2cb;
+}
+.lg-pitch ul {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lg-pitch li {
+  position: relative;
+  padding-left: 30px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.86);
+}
+.lg-pitch li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+}
+.lg-pitch li::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  width: 6px;
+  height: 3px;
+  border-left: 2px solid #fcc2cb;
+  border-bottom: 2px solid #fcc2cb;
+  transform: rotate(-45deg);
+}
+
+.lg-float {
+  position: absolute;
+  display: grid;
+  gap: 6px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: lg-bob 7s ease-in-out infinite;
+}
+.lg-float small {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.lg-float strong {
+  font-size: 16px;
+}
+.lg-float-a {
+  top: 18%;
+  right: 8%;
+}
+.lg-float-b {
+  bottom: 14%;
+  right: 16%;
+  min-width: 210px;
+  animation-delay: -3.5s;
+}
+.lg-chips {
+  display: flex;
+  gap: 6px;
+}
+.lg-chips b {
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+.lg-chips b.on {
+  background: var(--brand-700);
+  color: #fff;
+}
+.lg-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.lg-bar i {
+  display: block;
+  height: 100%;
+  width: 72%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-700), #e87889);
+  animation: lg-fill 3.4s var(--ease) infinite alternate;
+}
+@keyframes lg-fill {
+  from {
+    width: 28%;
+  }
+  to {
+    width: 82%;
+  }
+}
+@keyframes lg-bob {
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes lg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+/* ---------- Form side ---------- */
+.lg-main {
+  display: grid;
+  place-items: center;
+  padding: 40px 28px;
+}
+.lg-card {
+  display: grid;
+  gap: 0;
+  width: min(520px, 100%);
+  animation: lg-rise 0.7s var(--ease) both 0.05s;
+}
+.lg-back {
+  width: fit-content;
+  margin-bottom: 28px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.lg-eyebrow {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-600);
+}
+.lg-card h1 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.lg-sub {
+  margin: 10px 0 26px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.lg-roles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.lg-role {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 0;
+  gap: 12px;
+  padding: 12px 14px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid #dedede;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.25s var(--ease),
+    border-color 0.25s,
+    background 0.25s;
+}
+.lg-role:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(122, 0, 20, 0.1);
+}
+.lg-role[aria-checked='true'] {
+  border-color: var(--brand-600);
+  background: linear-gradient(180deg, #fff, var(--brand-50));
+  box-shadow:
+    0 0 0 3px rgba(205, 74, 96, 0.14),
+    0 10px 28px rgba(122, 0, 20, 0.1);
+}
+.lg-role-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.lg-role-text strong {
+  font-size: 14px;
+}
+.lg-role-text small {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+
+.lg-field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.lg-input {
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 16px;
+  background: #fff;
+  border: 1px solid #d3d3d5;
+  border-radius: 12px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.lg-input:focus-within {
+  border-color: var(--brand-600);
+  box-shadow: 0 0 0 3px rgba(205, 74, 96, 0.14);
+}
+.lg-input input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+.lg-input button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-700);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.lg-input button:hover {
+  background: var(--brand-50);
+}
+
+.lg-error {
+  margin-top: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  animation: lg-rise 0.3s var(--ease);
+}
+
+.lg-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-top: 22px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #d00022, #a8001b);
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(168, 0, 27, 0.32);
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.25s var(--ease),
+    opacity 0.2s;
+}
+.lg-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(168, 0, 27, 0.42);
+}
+.lg-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.lg-spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lg-turn 0.7s linear infinite;
+}
+@keyframes lg-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.lg-foot {
+  margin-top: 16px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-3);
+}
+
+@media (max-width: 900px) {
+  .lg {
+    grid-template-columns: 1fr;
+  }
+  .lg-side {
+    min-height: 220px;
+    padding: 28px 24px;
+  }
+  .lg-pitch ul,
+  .lg-float {
+    display: none;
+  }
+  .lg-pitch h2 {
+    margin: 0;
+    font-size: 30px;
+  }
+}
+@media (max-width: 520px) {
+  .lg-roles {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lg *,
+  .lg *::before,
+  .lg *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.lg-brand .vault-logo {
+  display: block;
+  filter: drop-shadow(0 3px 10px rgba(30, 0, 8, 0.35));
+}
