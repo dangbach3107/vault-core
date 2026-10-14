@@ -1,7 +1,7 @@
 # VAULT Core — Bộ quy tắc ứng dụng và hướng dẫn demo luồng thương vụ A–Z
 
 Ngày cập nhật: 14/09/2026  
-Đường dẫn demo Vercel: `https://frontend-xi-eosin-36.vercel.app/#/investor-mvp`  
+Đường dẫn demo Vercel: `https://vault-core-wk3v.onrender.com/`  
 Đường dẫn local: `http://127.0.0.1:5174/#/investor-mvp` nếu Vite đang chạy ở cổng 5174, hoặc `http://127.0.0.1:5173/#/investor-mvp` nếu dùng cổng mặc định.  
 Phạm vi: MVP dùng để trình diễn với nhà đầu tư/đồng nghiệp bằng dữ liệu giả lập. **Không dùng dữ liệu thật hoặc tài liệu mật thật.**
 

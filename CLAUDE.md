@@ -32,17 +32,9 @@ Update the matching planning file when a decision, requirement, boundary, tool, 
 - **Tests:** pytest + httpx (backend); Vitest + Testing Library (frontend); Playwright Chromium (e2e on ports 18000/15173, `vault_test`).
 - **Files:** Project-local blobs under `UPLOAD_DIRECTORY` (default `.data/uploads`). Pillow + pypdf validate images/PDFs; PDF.js renders in the browser.
 
-Root `requirements.txt` is **legacy only**. New backend deps: `backend/requirements.txt` and `backend/requirements.lock.txt`.
+Backend deps: `backend/requirements.txt` and `backend/requirements.lock.txt`.
 
-## Two codebases
-
-| Tree | Role |
-| --- | --- |
-| `backend/`, `frontend/`, `contracts/` | Active MVP. Work here. |
-| `app/`, `tests/`, root `requirements.txt`, `sample_data/` | Legacy demo. Do not import, mount, or “migrate” unless explicitly authorized. |
-| `VAULT_text/` | Source documents. Do not edit. |
-
-The new backend must not import or mount legacy business routes.
+The old root demo (`app/`, `tests/`, `sample_data/`, root `requirements.txt`) and the source documents (`VAULT_text/`, `VAULT-Canva-SVG/`) were removed from the repository; they remain in git history before the cleanup commit.
 
 ## Run (Windows, repo root)
 
@@ -76,7 +68,7 @@ From repo root:
 
 ```powershell
 .\.venv\Scripts\python.exe -m backend.testing
-.\.venv\Scripts\python.exe -m pytest tests backend/tests -q
+.\.venv\Scripts\python.exe -m pytest backend/tests -q
 .\.venv\Scripts\python.exe -m pytest backend/tests/test_companies.py -q   # one file
 .\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini check
 .\.venv\Scripts\python.exe -m backend.export_openapi --check
@@ -131,8 +123,6 @@ Money: decimal VND strings, max two fractional digits — do not convert through
 
 ## Do not modify
 
-- `VAULT_text/`
-- `app/`, `tests/` (legacy), root `requirements.txt`, `sample_data/` unless a task explicitly authorizes legacy work
 - `frontend/src/api/generated/`
 - Checked-in `contracts/openapi.json` except via `backend.export_openapi`
 - Real `.env`, `.tmp/database.*`, upload/fixture directories — never commit secrets, passwords, or live blobs
@@ -158,6 +148,6 @@ Money: decimal VND strings, max two fractional digits — do not convert through
 5. Keep secrets backend-only. Never put credentials in `VITE_*`.
 6. Create modules only when the requirement needs them. No empty “future” packages.
 7. Update PROJECT / REQUIREMENTS / ARCHITECTURE / TECH_STACK / CONVENTIONS / STATE as applicable. README if user commands change.
-8. Test the behavior you changed (legacy + new). Do not treat health as acceptance for data features.
+8. Test the behavior you changed. Do not treat health as acceptance for data features.
 
 Ruff / a Python formatter are not configured — do not invent those commands.
