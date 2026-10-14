@@ -54,3 +54,11 @@ Còn mở: D-02 / D-03 production; bốn tên field Buyer chính thức (A-07 t�
 - Seller chỉ thấy và thao tác hồ sơ/phòng dữ liệu thuộc chính tài khoản đó; truy cập chéo trả `404`.
 - Bổ sung tài khoản synthetic `seller2` và kiểm thử truy cập chéo ở company, preview và room.
 - Xác minh: 47 Python tests, 8 frontend tests, frontend build/lint, OpenAPI và generated API type check đều đạt.
+
+## Cập nhật 2026-10-14 — vận hành bản public
+
+- Migration `0005`: bảng `document_blobs`. Tài liệu tải lên lưu trong PostgreSQL cùng giao dịch với `document_versions` (không còn ghi đĩa); file cũ trên đĩa vẫn đọc được. Xóa tài liệu/phòng xóa luôn blob trong cùng giao dịch.
+- Giới hạn đăng nhập sai (5 lần/15 phút mỗi tài khoản, 30 lần mỗi IP, HTTP 429, bộ đếm trong bộ nhớ) và header bảo mật qua middleware ASGI.
+- Trang pháp lý `#/terms`, `#/privacy`, `#/contact` (nội dung ở `frontend/src/features/legal/`), trang 404 trong app.
+- `scripts/backup-db.sh` sao lưu DB gồm cả tài liệu.
+- Chưa làm: đăng nhập email riêng từng người (vẫn 7 tài khoản dùng chung `DEMO_ROLE_PASSWORD`), email liên hệ thật trong `siteInfo.ts`, CSP, tên miền riêng.

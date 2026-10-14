@@ -1,4 +1,4 @@
-"""Local immutable file store for the user-approved synthetic MVP, not a secure VDR."""
+"""Upload validation. Bytes are stored in PostgreSQL (document_blobs); the disk path helpers only read legacy files."""
 import hashlib
 import io
 from pathlib import Path
@@ -88,7 +88,8 @@ def validate_content(filename: str, data: bytes) -> str:
     return MEDIA_TYPES[extension]
 
 
-def persist_upload(settings: Settings, upload: UploadFile) -> dict:
+def prepare_upload(settings: Settings, upload: UploadFile) -> dict:
+    """Validate an upload and return its metadata plus the bytes; the caller stores them transactionally."""
     filename = (upload.filename or "").strip()
     if not filename or len(filename) > 255 or any(char in filename for char in ('/', '\\', ':', '\x00', '\r', '\n')) or any(ord(char) < 32 for char in filename):
         raise HTTPException(422, [{"loc": ["body", "file"], "type": "value_error", "msg": "Tên file không hợp lệ."}])
@@ -96,16 +97,4 @@ def persist_upload(settings: Settings, upload: UploadFile) -> dict:
     if len(data) > settings.max_upload_bytes:
         raise HTTPException(413, "File vượt giới hạn dung lượng của phòng dữ liệu.")
     media_type = validate_content(filename, data)
-    key = uuid4().hex + ".blob"
-    path = stored_path(settings, key)
-    created = False
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("xb") as file:
-            created = True
-            file.write(data)
-    except OSError:
-        if created:
-            path.unlink(missing_ok=True)
-        raise HTTPException(503, "Không ghi được file. Kiểm tra thư mục lưu trữ hoặc dung lượng ổ đĩa.") from None
-    return {"filename": filename, "media_type": media_type, "size_bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "storage_key": key}
+    return {"filename": filename, "media_type": media_type, "size_bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "storage_key": uuid4().hex + ".blob", "content": data}

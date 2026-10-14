@@ -3,17 +3,18 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import select
+from urllib.parse import quote
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from backend.app.api.companies import ApiError, DB, find_company, find_company_for_user
-from backend.app.db.models import Company, Document, DocumentVersion, Room
+from backend.app.db.models import Company, Document, DocumentBlob, DocumentVersion, Room
 from backend.app.schemas.room import (
     DocumentDetail, DocumentResponse, Folder, FolderResponse, FOLDER_LABELS,
     RoomDetail, RoomInput, RoomResponse, VersionResponse,
 )
-from backend.app.services.files import MEDIA_TYPES, persist_upload, stored_path
+from backend.app.services.files import MEDIA_TYPES, prepare_upload, stored_path
 from backend.app.core.auth import require_roles
 from backend.app.schemas.auth import UserResponse
 
@@ -53,8 +54,14 @@ def document_detail(session, document):
     return DocumentDetail(**document_response(document, versions[0]).model_dump(), versions=[VersionResponse.model_validate(row) for row in versions])
 
 
+def delete_blobs(session, storage_keys: list[str]) -> None:
+    """Delete stored bytes inside the same transaction that deletes their version rows."""
+    if storage_keys:
+        session.query(DocumentBlob).filter(DocumentBlob.storage_key.in_(storage_keys)).delete(synchronize_session=False)
+
+
 def delete_blob_files(settings, storage_keys: list[str]) -> None:
-    """Remove only blobs resolved by the application's storage-key allowlist."""
+    """Remove legacy on-disk blobs (written before uploads moved to PostgreSQL), allowlisted by storage key."""
     for storage_key in storage_keys:
         try:
             stored_path(settings, storage_key).unlink(missing_ok=True)
@@ -102,6 +109,7 @@ def delete_room(room_id: UUID, request: Request, session: DB, user: RoomEditor):
     document_ids = list(session.scalars(select(Document.id).where(Document.room_id == room.id)))
     storage_keys = list(session.scalars(select(DocumentVersion.storage_key).where(DocumentVersion.document_id.in_(document_ids)))) if document_ids else []
     if document_ids:
+        delete_blobs(session, storage_keys)
         session.query(DocumentVersion).filter(DocumentVersion.document_id.in_(document_ids)).delete(synchronize_session=False)
         session.query(Document).filter(Document.id.in_(document_ids)).delete(synchronize_session=False)
     session.delete(room)
@@ -114,16 +122,16 @@ def delete_room(room_id: UUID, request: Request, session: DB, user: RoomEditor):
 
 
 def save_file_version(request, session, document, upload, note):
-    settings = request.app.state.settings
-    metadata = persist_upload(settings, upload)
+    metadata = prepare_upload(request.app.state.settings, upload)
+    content = metadata.pop("content")
+    # Bytes and version row commit (or roll back) together, so a failure can never leave an orphan blob.
+    session.add(DocumentBlob(storage_key=metadata["storage_key"], content=content))
     version = DocumentVersion(document_id=document.id, number=document.current_version, note=note.strip(), **metadata)
     session.add(version)
     try:
         session.commit()
     except SQLAlchemyError:
         session.rollback()
-        # Remove only the uniquely-created new blob; earlier versions are untouched.
-        stored_path(settings, metadata["storage_key"]).unlink(missing_ok=True)
         raise HTTPException(503, "Chưa lưu được phiên bản. Kiểm tra database rồi thử lại.") from None
     return document_detail(session, document)
 
@@ -148,6 +156,7 @@ def get_document(room_id: UUID, document_id: UUID, session: DB, user: RoomReader
 def delete_document(room_id: UUID, document_id: UUID, request: Request, session: DB, user: RoomEditor):
     document = find_document(session, room_id, document_id, user, lock=True)
     storage_keys = list(session.scalars(select(DocumentVersion.storage_key).where(DocumentVersion.document_id == document.id)))
+    delete_blobs(session, storage_keys)
     session.query(DocumentVersion).filter(DocumentVersion.document_id == document.id).delete(synchronize_session=False)
     session.delete(document)
     try:
@@ -171,18 +180,22 @@ def get_content(room_id: UUID, document_id: UUID, number: Annotated[int, Path(ge
     version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == document.id, DocumentVersion.number == number))
     if version is None:
         raise HTTPException(404, "Không tìm thấy phiên bản.")
-    path = stored_path(request.app.state.settings, version.storage_key)
-    if not path.is_file():
-        raise HTTPException(503, "File lưu trữ không còn khả dụng. Kiểm tra thư mục dữ liệu; metadata vẫn được giữ.")
-    try:
-        with path.open("rb") as file:
-            actual_hash = hashlib.file_digest(file, "sha256").hexdigest()
-        if path.stat().st_size != version.size_bytes or actual_hash != version.sha256:
-            raise HTTPException(503, "File lưu trữ đã thay đổi ngoài ứng dụng. Không thể trả đúng phiên bản; cần khôi phục file gốc.")
-    except OSError:
-        raise HTTPException(503, "Không đọc được file lưu trữ. Kiểm tra thư mục dữ liệu.") from None
+    blob = session.get(DocumentBlob, version.storage_key)
+    data = blob.content if blob is not None else None
+    if data is None:  # legacy file written to disk before uploads moved into PostgreSQL
+        path = stored_path(request.app.state.settings, version.storage_key)
+        try:
+            data = path.read_bytes() if path.is_file() else None
+        except OSError:
+            raise HTTPException(503, "Không đọc được file lưu trữ.") from None
+    if data is None:
+        raise HTTPException(503, "File lưu trữ không còn khả dụng; metadata vẫn được giữ.")
+    if len(data) != version.size_bytes or hashlib.sha256(data).hexdigest() != version.sha256:
+        raise HTTPException(503, "File lưu trữ đã thay đổi ngoài ứng dụng. Không thể trả đúng phiên bản; cần khôi phục file gốc.")
     inline = not download and version.media_type in {"application/pdf", "image/png", "image/jpeg", "text/plain"}
-    return FileResponse(path, media_type=version.media_type, filename=version.filename, content_disposition_type="inline" if inline else "attachment", headers={
-        "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store",
+    ascii_name = version.filename.encode("ascii", "ignore").decode().replace('"', "") or "file"
+    disposition = f'{"inline" if inline else "attachment"}; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(version.filename)}'
+    return Response(content=data, media_type=version.media_type, headers={
+        "Content-Disposition": disposition, "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store",
         "Content-Security-Policy": "sandbox; default-src 'none'; frame-ancestors 'self'",
     })

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import './landing.css'
 import Logo from '../../components/Logo'
+import { LegalLinks } from '../legal/LegalPage'
 
 const TRY_HREF = '#/vault'
 
@@ -636,6 +637,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         <span>
           © VAULT · Verified Access to Unlisted Listings & Transactions
         </span>
+        <LegalLinks />
       </footer>
     </div>
   )

@@ -4,6 +4,7 @@ import { request } from '../../api/workspace'
 import RoleAvatar from '../../components/RoleAvatar'
 import './login.css'
 import Logo from '../../components/Logo'
+import { LegalLinks } from '../legal/LegalPage'
 
 const accounts = [
   {
@@ -176,6 +177,7 @@ export default function Login({
           <p className="lg-foot">
             VAULT · Verified Access to Unlisted Listings & Transactions
           </p>
+          <LegalLinks className="lg-legal" />
         </form>
       </section>
     </main>

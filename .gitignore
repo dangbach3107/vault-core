@@ -63,3 +63,6 @@ coverage/
 # Local synthetic documents; metadata remains in PostgreSQL.
 .data/
 .neon
+
+# Database backups
+backups/

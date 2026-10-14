@@ -10,6 +10,8 @@ from backend.app.api.rooms import router as room_router
 from backend.app.api.deals import router as deal_router
 from backend.app.api.auth import router as auth_router
 from backend.app.api.body_limit import BodyLimitMiddleware
+from backend.app.api.security_headers import SecurityHeadersMiddleware
+from backend.app.core.ratelimit import LoginLimiter
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -29,6 +31,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     application.state.engine = None
     application.state.session_factory = None
+    application.state.login_limiter = LoginLimiter()
     allowed_origins = sorted(settings.allowed_origin_values())
     if allowed_origins:
         application.add_middleware(
@@ -39,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             expose_headers=["Content-Disposition"],
             max_age=600,
         )
+    application.add_middleware(SecurityHeadersMiddleware, hsts=settings.environment == "production")
     application.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 65536)
     application.include_router(health_router(settings), prefix=settings.api_v1_str)
     application.include_router(auth_router, prefix=settings.api_v1_str)

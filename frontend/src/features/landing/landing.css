@@ -1172,3 +1172,10 @@ html {
   display: block;
   filter: drop-shadow(0 3px 10px rgba(30, 0, 8, 0.35));
 }
+
+.lp-footer .legal-links a {
+  color: rgba(255, 255, 255, 0.7);
+}
+.lp-footer .legal-links a:hover {
+  color: #fff;
+}
