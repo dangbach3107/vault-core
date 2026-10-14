@@ -7,6 +7,33 @@ export function hasConfiguredBackend() {
 }
 
 const demoPasswordKey = 'vault.demoPassword'
+const authKey = 'vault.auth'
+
+export type AuthUser = {
+  username: string
+  role: 'BUYER' | 'SELLER' | 'VAULT_ADMIN' | 'LEGAL' | 'TECH_DD' | 'FINANCE'
+  display_name: string
+}
+
+export type AuthSession = { access_token: string; user: AuthUser }
+
+export function getAuthSession(): AuthSession | null {
+  try {
+    const value = localStorage.getItem(authKey)
+    return value ? (JSON.parse(value) as AuthSession) : null
+  } catch {
+    return null
+  }
+}
+
+export function setAuthSession(value: AuthSession | null) {
+  try {
+    if (value) localStorage.setItem(authKey, JSON.stringify(value))
+    else localStorage.removeItem(authKey)
+  } catch {
+    // Storage unavailable: the caller still keeps the session in React state.
+  }
+}
 
 export function getDemoPassword() {
   try {
@@ -27,5 +54,9 @@ export function setDemoPassword(value: string) {
 
 export function demoHeaders(): Record<string, string> {
   const password = getDemoPassword()
-  return password ? { 'X-Demo-Password': password } : {}
+  const token = getAuthSession()?.access_token
+  return {
+    ...(password ? { 'X-Demo-Password': password } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 }

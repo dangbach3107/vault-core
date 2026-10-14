@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { Company, Fact, Preview } from '../../api/workspace'
+import { request } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import { fields, issueLabels, optionLabels, statusLabels } from './fields'
+import ActionDialog from '../../components/ActionDialog'
 
 type Tab = 'overview' | 'finance' | 'source' | 'rooms' | 'preview'
 
@@ -134,6 +136,9 @@ export default function CompanyDetail({
   const result = useLoad<Company>(`/companies/${id}`)
   const [tab, setTab] = useState<Tab>('overview')
   const [layer, setLayer] = useState(2)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
   if (!result.data) return <LoadState {...result} />
   const company = result.data
   const items = factsOf(company)
@@ -184,8 +189,45 @@ export default function CompanyDetail({
           <button type="button" onClick={() => setTab('preview')}>
             Xem trước công bố
           </button>
+          <button
+            type="button"
+            className="danger"
+            disabled={deleting}
+            onClick={() => setConfirmDelete(true)}
+          >
+            {deleting ? 'Đang xoá…' : 'Xoá hồ sơ'}
+          </button>
         </div>
       </div>
+      {confirmDelete && <ActionDialog
+        title={`Xóa hồ sơ “${company.profile.company_name.value}”?`}
+        description="Hồ sơ nháp sẽ bị xóa vĩnh viễn. Hồ sơ có phòng dữ liệu liên quan sẽ được backend chặn để bảo toàn tài liệu."
+        confirmLabel="Xóa hồ sơ"
+        danger
+        busy={deleting}
+        onCancel={() => setConfirmDelete(false)}
+        onSubmit={async () => {
+              setDeleting(true)
+              setDeleteError('')
+              try {
+                await request(`/companies/${id}`, { method: 'DELETE' })
+                location.hash = '/companies'
+              } catch (error) {
+                setDeleteError(
+                  error instanceof Error
+                    ? error.message
+                    : 'Không xoá được hồ sơ.',
+                )
+                setDeleting(false)
+                setConfirmDelete(false)
+              }
+        }}
+      />}
+      {deleteError && (
+        <p className="error-box" role="alert">
+          {deleteError}
+        </p>
+      )}
       {saved && (
         <p className="success-box" role="status">
           Đã lưu hồ sơ.

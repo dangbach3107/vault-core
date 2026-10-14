@@ -4,9 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.api.health import health_router
-from backend.app.core.config import Settings
+from backend.app.core.config import REPOSITORY_ROOT, Settings
 from backend.app.api.companies import router as company_router
 from backend.app.api.rooms import router as room_router
+from backend.app.api.deals import router as deal_router
+from backend.app.api.auth import router as auth_router
 from backend.app.api.body_limit import BodyLimitMiddleware
 
 
@@ -27,20 +29,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.settings = settings
     application.state.engine = None
     application.state.session_factory = None
-    cors_list = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
-    application.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_list if cors_list else ["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    allowed_origins = sorted(settings.allowed_origin_values())
+    if allowed_origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=["Accept", "Authorization", "Content-Type", "X-Demo-Password"],
+            expose_headers=["Content-Disposition"],
+            max_age=600,
+        )
     application.add_middleware(BodyLimitMiddleware, max_bytes=settings.max_upload_bytes + 65536)
     application.include_router(health_router(settings), prefix=settings.api_v1_str)
+    application.include_router(auth_router, prefix=settings.api_v1_str)
     application.include_router(company_router, prefix=settings.api_v1_str)
     application.include_router(room_router, prefix=settings.api_v1_str)
+    application.include_router(deal_router, prefix=settings.api_v1_str)
 
-    frontend_dist = settings.upload_directory.parents[1] / "frontend" / "dist"
+    frontend_dist = REPOSITORY_ROOT / "frontend" / "dist"
     if frontend_dist.is_dir():
         from fastapi.staticfiles import StaticFiles
         application.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")

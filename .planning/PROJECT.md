@@ -1,6 +1,43 @@
 # Định nghĩa dự án VAULT
 
+<<<<<<< Updated upstream
 Cập nhật **2026-09-13**. Kịch bản ứng dụng lấy từ [VAULT_text/Work-flow.txt](../VAULT_text/Work-flow.txt) (15 bước). Planning này **không** tự cho phép viết code tính năng, commit hay đẩy remote.
+=======
+Cập nhật: **2026-10-08**.
+
+## Quyết định phạm vi 2026-10-08
+
+Theo xác nhận trực tiếp của người dùng, MVP bao gồm backend persistence cho toàn bộ 11 nhóm chức năng P1: buyer request, seller profile link/sample case, disclosure approvals, Indicative LOI, VDR opening, Tech DD, Definitive Offer, legal closing, deal closed, bốn loại fee line và post-deal handoff. Đây vẫn là synthetic MVP; auth/RBAC/MFA, e-sign, scanner và VDR production không nằm trong tuyên bố hoàn thành.
+
+Quyết định D-20: danh sách 20 bước từ nhận lead đến post-deal/đóng hồ sơ là khung tham chiếu để thiết kế các module nghiệp vụ, không phải một tính năng workflow riêng cho người dùng bấm chuyển bước. Sản phẩm phải tập trung vào dữ liệu và thao tác thật của lead/deal, participant/KYB, mandate, seller intake/readiness, teaser, buyer thesis/matching, approvals/NDA/access, Q&A, DD/findings, offer-contract-closing, fee và post-deal. Trạng thái/owner/next step là projection từ các module này, không phải nguồn dữ liệu thay thế chúng.
+
+Quyết định D-21: theo `pasted-text.txt` do người dùng cung cấp ngày 2026-10-08, controlled access là lõi phân quyền. Grant không gắn chung với company mà phải chứa person/user, deal, access level L0/L1/L2/L3/Closing, document scope, purpose, approver, thời điểm cấp, hết hạn, thu hồi và lý do. Matching chỉ đề xuất; không tự cấp quyền. Buyer tạo request; Seller/Legal quyết định; Seller/Legal/VAULT Admin có thể revoke theo phạm vi MVP.
+
+Quyết định D-22: các chức năng sản phẩm mới phải nằm trong feature/module/route độc lập và điều hướng theo role; không tiếp tục nhồi vào `A–Z Deal Workspace · synthetic investor demo`. Route A–Z chỉ được giữ như demo tham khảo legacy. Điểm vào sau đăng nhập là VAULT module hub.
+
+Quyết định D-23: “phân quyền” nghĩa là RBAC theo tài khoản đăng nhập. Menu/route được lọc theo Buyer, Seller, VAULT Admin, Legal, Tech DD và Finance; backend vẫn phải kiểm tra role cho mutation. Access request/approval L1–L3 được gọi là nghiệp vụ `Disclosure approvals`, không gọi là chức năng phân quyền tài khoản.
+
+## Trạng thái dự án hiện tại
+
+VAULT Core hiện có hai lớp sản phẩm:
+
+1. **Nền kỹ thuật đã có backend thật**: hồ sơ doanh nghiệp / Trust Profile và phòng dữ liệu local bằng FastAPI + PostgreSQL + file storage local.
+2. **A–Z Deal Workspace frontend MVP**: một luồng thương vụ mẫu từ Buyer request tới closing, dùng React state và dữ liệu giả lập, đã deploy Vercel để đồng nghiệp/nhà đầu tư test.
+
+Đường dẫn demo chính:
+
+```text
+https://frontend-xi-eosin-36.vercel.app/#/investor-mvp
+```
+
+Route local chính:
+
+```text
+/#/investor-mvp
+```
+
+MVP này **không production-ready** và **không dùng dữ liệu thật**.
+>>>>>>> Stashed changes
 
 ## Mục đích
 
@@ -37,7 +74,15 @@ Hai lõi dữ liệu đã có: **Hồ sơ doanh nghiệp (Trust Profile)** và *
 - **Mở lớp (người A):** Work-flow **1–8** — nhu cầu, L1, match, NDA, L2, Legal ×3, duyệt từng file L3.
 - **VDR & đóng (người B):** **9–15** — mở VDR, Tech DD, LOI, checklist, closed, phí, handoff; seed “L3 file đã duyệt”.
 
+<<<<<<< Updated upstream
 Nối bằng `closings.disclosure_id` là PR **sau**. Tab persona chỉ trên màn từng cụm.
+=======
+- Auth/RBAC/MFA và audit bảo mật production cho deal workspace.
+- Auth/RBAC/MFA thật.
+- VDR production, e-sign, watermark, antivirus/file scan.
+- Audit log production cho view/download/approve/revoke.
+- Real object storage hoặc provider VDR.
+>>>>>>> Stashed changes
 
 **Trong scope**
 

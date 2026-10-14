@@ -121,6 +121,7 @@ class CompanyUpdate(StrictModel):
 class CompanyResponse(StrictModel):
     id: UUID
     alias: str
+    owner_username: str
     revision: int
     created_at: datetime
     updated_at: datetime
@@ -130,6 +131,7 @@ class CompanyResponse(StrictModel):
 class CompanySummary(StrictModel):
     id: UUID
     alias: str
+    owner_username: str
     name: str
     tax_id: str | None
     updated_at: datetime

@@ -1,6 +1,10 @@
 # Lộ trình — hai người, khối lượng gần bằng nhau
 
+<<<<<<< Updated upstream
 Cập nhật **2026-09-13**. **Chưa được phép code** cho đến khi người dùng bảo làm.
+=======
+Cập nhật: **2026-10-08**.
+>>>>>>> Stashed changes
 
 Hai cụm **độc lập**: không chung bảng, route, thư mục UI; không lần lượt sửa cùng `Workspace.tsx` / cùng file Alembic / `openapi.json`. Mỗi người demo **sản phẩm của mình** (tự seed). Nối 15 bước là PR **sau**.
 
@@ -14,11 +18,19 @@ Hai cụm **độc lập**: không chung bảng, route, thư mục UI; không l�
 
 ## Pha
 
+<<<<<<< Updated upstream
 | Pha | Việc | Trạng thái |
 | --- | --- | --- |
 | P2a / P3a | Hồ sơ + phòng local | Xong |
 | **P3b-A** | Mở lớp (1–8) | Kế hoạch |
 | **P3b-B** | VDR & đóng (9–15) | Kế hoạch |
+=======
+**Trạng thái: hoàn thành MVP và đã xác minh ngày 2026-10-08.**
+
+Danh sách 20 bước theo D-20 chỉ dùng để kiểm tra độ phủ của các module nghiệp vụ; không triển khai thành sản phẩm workflow độc lập.
+
+Mục tiêu: biến frontend state demo thành dữ liệu có lưu trong PostgreSQL.
+>>>>>>> Stashed changes
 
 ## Ranh giới file
 
@@ -55,6 +67,7 @@ Không làm mở VDR, Tech DD, phí. Toast/khóa nút: REQUIREMENTS FLOW-01–08
 
 Fixture mở đầu (text, **không** đọc bảng A): “Legal đã duyệt + đã có grant file”. Room/file do B tạo.
 
+<<<<<<< Updated upstream
 | Bước | Tab | Nút | Lưu (của B) |
 | --- | --- | --- | --- |
 | 9 | Admin | **Open approved VDR files** | `vdr_opened`; chỉ file trong fixture grant của B |
@@ -64,6 +77,13 @@ Fixture mở đầu (text, **không** đọc bảng A): “Legal đã duyệt + 
 | 13 | Admin | **Mark SPA signed / deal closed** | `status=closed` (cần 11+12) |
 | 14 | Finance | **Record success fee** | 4 dòng; Tech DD / B2B không vào tổng VAULT |
 | 15 | Admin | **Post-deal handoff to Rikkei** | ghi chú; 7/7 |
+=======
+Trước P2 production, hoàn thiện controlled-access MVP theo D-21: access request, Seller/Legal decision, person/deal/purpose/scope/expiry grant, revoke và audit event. API aggregate đầu tiên đã được triển khai; UI theo role và enforcement trên document view/download là phần kế tiếp.
+
+Theo D-22, mỗi module tiếp theo (`seller-readiness`, `teasers`, `buyer-thesis`, `matching`, `nda`, `q-and-a`, `due-diligence`, `closing`, `fees`) phải có feature folder và route riêng. Không mở rộng `features/investor-mvp/InvestorMvp.tsx`.
+
+Chỉ sau P1 mới xét real data. Điều kiện tối thiểu:
+>>>>>>> Stashed changes
 
 **B xong:** e2e 9→15; file ngoài grant 404; tổng phí đúng nhãn.
 
