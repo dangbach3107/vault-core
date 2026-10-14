@@ -10,6 +10,7 @@ import InvestorMvp from './features/investor-mvp/InvestorMvp'
 import DealList from './features/deals/DealList'
 import VaultHome from './features/vault/VaultHome'
 import AccessWorkspace from './features/access/AccessWorkspace'
+import Landing from './features/landing/Landing'
 import {
   hasConfiguredBackend,
   getAuthSession,
@@ -304,7 +305,7 @@ export default function Workspace() {
   const hostedWithoutBackend = isHostedWithoutBackend()
   const path =
     pathOf(hash) ||
-    (hostedWithoutBackend ? '/investor-mvp' : session ? '/vault' : '/companies')
+    (hostedWithoutBackend ? '/investor-mvp' : session ? '/vault' : '/welcome')
   const parts = path.split('/').filter(Boolean)
   const params = new URLSearchParams(hash.split('?')[1] || '')
   if (path === '/health' && !hostedWithoutBackend)
@@ -313,6 +314,7 @@ export default function Workspace() {
         <App />
       </div>
     )
+  if (path === '/welcome') return <Landing signedIn={Boolean(session)} />
   let screen = <CompanyList />
   if (hostedWithoutBackend && needsBackend(path))
     screen = <BackendRequiredNotice target={path} />
