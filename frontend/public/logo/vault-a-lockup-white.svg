@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 64" width="196" height="64" role="img" aria-label="VAULT"><defs><linearGradient id="vga-white" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d00022"/><stop offset="1" stop-color="#7a0014"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#vga-white)"/>
+  <g fill="none" stroke-width="5" stroke-linejoin="miter" stroke-linecap="butt">
+    <path d="M12 15 32 47 52 15" stroke="#f5f5f5"/>
+    <path d="M17.6 15 32 38 46.4 15" stroke="#f2a3b0"/>
+    <path d="M23.25 15 32 29 40.75 15" stroke="#f2a3b0" stroke-opacity=".55"/>
+  </g><g transform="translate(85 20) scale(0.6)" fill="#f5f5f5">
+  <polygon points="0,0 7,0 14,26.67 21,0 28,0 17.5,40 10.5,40"/>
+  <polygon transform="translate(40 0)" points="10.5,0 17.5,0 28,40 21,40 14,13.33 7,40 0,40"/>
+  <path transform="translate(82 0)" d="M3.5 0V26a10.5 10.5 0 0 0 21 0V0" fill="none" stroke="#f5f5f5" stroke-width="7"/>
+  <polygon transform="translate(124 0)" points="0,0 7,0 7,33 24,33 24,40 0,40"/>
+  <polygon transform="translate(156 0)" points="0,0 28,0 28,7 17.5,7 17.5,40 10.5,40 10.5,7 0,7"/>
+</g></svg>

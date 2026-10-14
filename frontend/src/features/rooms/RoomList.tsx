@@ -75,7 +75,7 @@ function NewRoom({ company }: { company: Summary }) {
           required
           maxLength={200}
           disabled={saving}
-          placeholder="Ví dụ: Thương vụ hợp tác 2026 — giả lập"
+          placeholder="Ví dụ: Thương vụ hợp tác 2026"
         />
       </label>
       {error && (
