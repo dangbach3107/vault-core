@@ -31,7 +31,7 @@ V1-01–V1-12 (pilot vận hành: MFA, VDR mua ngoài, ma trận đã ký) **v�
 
 ## Kịch bản 15 bước (Work-flow)
 
-Một deal giả. Nút sau **khóa** và nêu bước thiếu (tiếng Việt). Toast đúng thông điệp dưới đây. Chrome hồ sơ/phòng theo `VAULT-Canva-SVG` (`13-states`: trống, lỗi, 10 MiB, bản cũ, đã lưu nháp).
+Một deal giả. Nút sau **khóa** và nêu bước thiếu (tiếng Việt). Toast đúng thông điệp dưới đây. Chrome hồ sơ/phòng theo mockup S19 (đã gỡ khỏi repo; mục `13-states`: trống, lỗi, 10 MiB, bản cũ, đã lưu nháp).
 
 | ID | Tab | Nút (giữ nguyên chữ) | Phải có trước | Lưu gì | Thông điệp / ý nghĩa |
 | --- | --- | --- | --- | --- | --- |

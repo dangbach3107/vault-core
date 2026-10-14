@@ -24,7 +24,7 @@ VAULT Core hiện có hai lớp sản phẩm:
 Đường dẫn demo chính:
 
 ```text
-https://frontend-xi-eosin-36.vercel.app/#/investor-mvp
+https://vault-core-wk3v.onrender.com/
 ```
 
 Route local chính:
@@ -56,10 +56,7 @@ Kỹ thuật/IT **không** mặc định đọc nội dung deal.
 
 ## Nguồn
 
-- **S14 / S16 / S17:** file trong `VAULT_text/` (hướng dẫn kỹ thuật, tổng hợp F01–F20). Đề xuất, chưa phải chính sách đã duyệt.
-- **S18 / Work-flow:** [Work-flow.txt](../VAULT_text/Work-flow.txt) — **kịch bản MVP trong app**.
-- **S19:** [VAULT-Canva-SVG/](../VAULT-Canva-SVG/) (`01`–`13`) — giao diện hồ sơ / phòng dữ liệu. Tab persona chưa có trong bộ SVG.
-- Code cũ `app/`, `sample_data/` là prototype, không phải chính sách.
+- **S14 / S16 / S17 / S18 / S19:** tài liệu nguồn (`VAULT_text/`: hướng dẫn kỹ thuật, tổng hợp F01–F20, Work-flow.txt) và mockup giao diện (`VAULT-Canva-SVG/` 01–13) đã gỡ khỏi repo sau commit dọn dẹp; xem lịch sử git (commit `f001fd5` trở về trước) khi cần đối chiếu.
 
 Không lấy ngân sách / số deal / tháng trong nguồn làm mốc dự án.
 

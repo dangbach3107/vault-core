@@ -2,7 +2,7 @@
 
 Inherits [root AGENTS](../AGENTS.md). Read [ARCHITECTURE](../.planning/ARCHITECTURE.md), [CONVENTIONS](../.planning/CONVENTIONS.md) and [TECH_STACK](../.planning/TECH_STACK.md).
 
-- The active entry point is `backend.app.main:app`, launched from repository root. The separate `app/` at root is preserved legacy code; do not import its business routes.
+- The active entry point is `backend.app.main:app`, launched from repository root.
 - Keep Pydantic request/response schemas under `app/schemas/` and SQLAlchemy persistence code under `app/db/`. Add business services only for authorized requirements.
 - `GET /api/v1/health` is liveness only. It must work without PostgreSQL or credentials and must not claim readiness of external systems.
 - Pydantic Settings reads root `.env`; process environment takes precedence. Keep provider/database credentials backend-only.

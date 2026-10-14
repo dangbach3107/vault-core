@@ -10,9 +10,6 @@ backend/app/db/      models 0001–0002
 frontend/src/features/profiles|rooms
 frontend/src/Workspace.tsx    hash: companies, rooms, health
 contracts/openapi.json
-VAULT-Canva-SVG/     01–13 (chrome)
-VAULT_text/          nguồn — không sửa
-app/                 demo cũ — không mount
 ```
 
 Không tạo package rỗng “cho đủ sơ đồ”.

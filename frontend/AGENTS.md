@@ -2,7 +2,7 @@
 
 Inherits [root AGENTS](../AGENTS.md). Read [ARCHITECTURE](../.planning/ARCHITECTURE.md), [CONVENTIONS](../.planning/CONVENTIONS.md) and [TECH_STACK](../.planning/TECH_STACK.md).
 
-- `Workspace.tsx` handles hash navigation; `features/profiles/` and `features/rooms/` own their screens. Preserve the root legacy HTML demo.
+- `Workspace.tsx` handles hash navigation; `features/profiles/` and `features/rooms/` own their screens.
 - Health calls use `src/api/client.ts`; profile/room/binary calls use `src/api/workspace.ts`. Use generated contract types; do not edit `src/api/generated/`.
 - PDF.js renders one page at a time with a local worker; TXT is plain React text. Offer download for unsupported Office previews. Revoke blob URLs and cancel fetch/render work on unmount; never render uploaded HTML.
 - Vite forwards `/api` to the backend. Root `.env` supplies public `VITE_` values; never put secrets in these variables.
