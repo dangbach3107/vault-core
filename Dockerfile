@@ -21,8 +21,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENVIRONMENT=production \
-    INTERNAL_PREVIEW_ENABLED=true \
-    ALLOW_PUBLIC_ACCESS=true
+    INTERNAL_PREVIEW_ENABLED=true
 
 # Install dependencies
 COPY backend/requirements.txt ./backend/requirements.txt

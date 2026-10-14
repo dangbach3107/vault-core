@@ -33,6 +33,7 @@ export type FieldDefinition = {
 }
 export const fields: FieldDefinition[] = [
   { key: 'company_name', label: 'Tên doanh nghiệp', maxLength: 200 },
+  { key: 'source_url', label: 'Nguồn dữ liệu (link kiểm tra)', kind: 'long' },
   { key: 'tax_id', label: 'Mã số thuế', maxLength: 30 },
   {
     key: 'founded_year',

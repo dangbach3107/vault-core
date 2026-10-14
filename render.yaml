@@ -1,18 +1,21 @@
 services:
   - type: web
-    name: vault-core-backend
-    runtime: python
+    name: vault-core
+    runtime: docker
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: ./scripts/start-production.sh
+    healthCheckPath: /api/v1/health
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: INTERNAL_PREVIEW_ENABLED
         value: "true"
-      - key: ALLOW_PUBLIC_ACCESS
-        value: "true"
-      - key: CORS_ORIGINS
-        value: "*"
       - key: DATABASE_URL
         sync: false
+      - key: DEMO_ROLE_PASSWORD
+        sync: false
+      - key: DEMO_AUTH_SECRET
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        sync: false # <service>.onrender.com
+      - key: ALLOWED_ORIGINS
+        sync: false # https://<service>.onrender.com

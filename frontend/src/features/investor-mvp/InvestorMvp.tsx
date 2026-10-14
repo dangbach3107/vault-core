@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import './investor-mvp.css'
+import { request } from '../../api/workspace'
 
 type Tab = 'buyer' | 'seller' | 'vault' | 'legal' | 'tech' | 'finance'
 type DealState = {
@@ -24,6 +26,45 @@ type DealState = {
   postDealHandoff: boolean
 }
 
+type DealRecord = {
+  id: string
+  title: string
+  revision: number
+  state: { steps: DealState; workflow?: WorkflowState }
+}
+
+type WorkflowState = {
+  status: 'ACTIVE' | 'STOPPED' | 'CLOSED'
+  current_step: number
+  stop_reason: string | null
+  opened_data: string[]
+  unmet_conditions: string[]
+  history: { step: number; note: string; outcome: string }[]
+}
+
+const vaultWorkflow = [
+  ['Nhận lead / cơ hội giao dịch', 'VAULT_ADMIN'],
+  ['Xác minh bên tham gia', 'LEGAL'],
+  ['Xác định mục tiêu giao dịch', 'VAULT_ADMIN'],
+  ['Legal & eligibility screening', 'LEGAL'],
+  ['Ký mandate / xác nhận phạm vi', 'VAULT_ADMIN'],
+  ['Thu thập hồ sơ ban đầu của seller', 'SELLER'],
+  ['Đánh giá mức độ sẵn sàng', 'VAULT_ADMIN'],
+  ['Chuẩn hóa hồ sơ seller', 'SELLER'],
+  ['Tạo Teaser ẩn danh', 'SELLER'],
+  ['Xây Buyer Thesis', 'BUYER'],
+  ['Tìm và shortlist buyer phù hợp', 'VAULT_ADMIN'],
+  ['Seller duyệt buyer được tiếp cận', 'SELLER'],
+  ['Buyer gửi yêu cầu tiếp cận', 'BUYER'],
+  ['Ký NDA', 'LEGAL'],
+  ['Mở Data Room theo quyền', 'VAULT_ADMIN'],
+  ['Management Meeting / Q&A', 'VAULT_ADMIN'],
+  ['Due Diligence / Tech DD', 'TECH_DD'],
+  ['Xử lý findings & đàm phán', 'VAULT_ADMIN'],
+  ['LOI → hợp đồng → Signing/Closing', 'LEGAL'],
+  ['Post-deal Integration / đóng hồ sơ', 'VAULT_ADMIN'],
+] as const
+
 const initialDeal: DealState = {
   buyerRequest: false,
   sellerProfile: false,
@@ -46,10 +87,6 @@ const initialDeal: DealState = {
   successFeeRecorded: false,
   postDealHandoff: false,
 }
-
-const completedDeal: DealState = Object.fromEntries(
-  Object.keys(initialDeal).map((key) => [key, true]),
-) as DealState
 
 const tabs: { id: Tab; label: string; role: string }[] = [
   { id: 'buyer', label: 'Buyer', role: 'Doanh nghiệp Nhật / strategic buyer' },
@@ -94,28 +131,82 @@ const whyItMatters: Record<Tab, string> = {
 const steps: { key: keyof DealState; label: string; owner: string }[] = [
   { key: 'buyerRequest', label: 'Buyer tạo request 4 trường', owner: 'Buyer' },
   { key: 'sellerProfile', label: 'Seller tạo hồ sơ mẫu', owner: 'Seller' },
-  { key: 'prepPackageFeeRecorded', label: 'Finance ghi nhận phí gói chuẩn bị', owner: 'Finance' },
+  {
+    key: 'prepPackageFeeRecorded',
+    label: 'Finance ghi nhận phí gói chuẩn bị',
+    owner: 'Finance',
+  },
   { key: 'sellerL1Approval', label: 'Seller duyệt teaser L1', owner: 'Seller' },
   { key: 'matchPrepared', label: 'VAULT match buyer–seller', owner: 'VAULT' },
-  { key: 'identityRequested', label: 'Buyer yêu cầu mở danh tính L2', owner: 'Buyer' },
+  {
+    key: 'identityRequested',
+    label: 'Buyer yêu cầu mở danh tính L2',
+    owner: 'Buyer',
+  },
   { key: 'ndaRecorded', label: 'VAULT ghi nhận NDA', owner: 'VAULT' },
-  { key: 'sellerL2Approval', label: 'Seller duyệt buyer mở L2', owner: 'Seller' },
-  { key: 'indicativeLoiSubmitted', label: 'Buyer nộp Indicative LOI trước khi mở VDR', owner: 'Buyer' },
+  {
+    key: 'sellerL2Approval',
+    label: 'Seller duyệt buyer mở L2',
+    owner: 'Seller',
+  },
+  {
+    key: 'indicativeLoiSubmitted',
+    label: 'Buyer nộp Indicative LOI trước khi mở VDR',
+    owner: 'Buyer',
+  },
   { key: 'legalL3Approval', label: 'Legal duyệt L3', owner: 'Legal' },
-  { key: 'crossBorderApproval', label: 'Legal duyệt cross-border access', owner: 'Legal' },
-  { key: 'noEscrowConfirmed', label: 'Legal xác nhận VAULT không giữ tiền', owner: 'Legal' },
-  { key: 'sellerFileApproval', label: 'Seller duyệt file L3 cho buyer', owner: 'Seller' },
+  {
+    key: 'crossBorderApproval',
+    label: 'Legal duyệt cross-border access',
+    owner: 'Legal',
+  },
+  {
+    key: 'noEscrowConfirmed',
+    label: 'Legal xác nhận VAULT không giữ tiền',
+    owner: 'Legal',
+  },
+  {
+    key: 'sellerFileApproval',
+    label: 'Seller duyệt file L3 cho buyer',
+    owner: 'Seller',
+  },
   { key: 'vdrOpened', label: 'VAULT mở VDR files được duyệt', owner: 'VAULT' },
-  { key: 'techDdSigned', label: 'Tech DD ký checklist + findings', owner: 'Tech DD' },
+  {
+    key: 'techDdSigned',
+    label: 'Tech DD ký checklist + findings',
+    owner: 'Tech DD',
+  },
   { key: 'loiSubmitted', label: 'Buyer gửi Definitive Offer', owner: 'Buyer' },
-  { key: 'legalClosingChecklist', label: 'Legal checklist closing', owner: 'Legal' },
+  {
+    key: 'legalClosingChecklist',
+    label: 'Legal checklist closing',
+    owner: 'Legal',
+  },
   { key: 'dealClosed', label: 'SPA signed / closing giả lập', owner: 'VAULT' },
-  { key: 'successFeeRecorded', label: 'Finance ghi nhận success fee', owner: 'Finance' },
-  { key: 'postDealHandoff', label: 'Post-deal handoff cho Rikkei', owner: 'VAULT' },
+  {
+    key: 'successFeeRecorded',
+    label: 'Finance ghi nhận success fee',
+    owner: 'Finance',
+  },
+  {
+    key: 'postDealHandoff',
+    label: 'Post-deal handoff cho Rikkei',
+    owner: 'VAULT',
+  },
 ]
 
-const macroStages: { id: string; label: string; keys: (keyof DealState)[]; tab: Tab }[] = [
-  { id: 'request', label: 'Buyer Request', keys: ['buyerRequest'], tab: 'buyer' },
+const macroStages: {
+  id: string
+  label: string
+  keys: (keyof DealState)[]
+  tab: Tab
+}[] = [
+  {
+    id: 'request',
+    label: 'Buyer Request',
+    keys: ['buyerRequest'],
+    tab: 'buyer',
+  },
   {
     id: 'seller',
     label: 'Seller Profile & Prep Fee',
@@ -125,14 +216,30 @@ const macroStages: { id: string; label: string; keys: (keyof DealState)[]; tab: 
   {
     id: 'match',
     label: 'Match & Layer 2',
-    keys: ['matchPrepared', 'identityRequested', 'ndaRecorded', 'sellerL2Approval'],
+    keys: [
+      'matchPrepared',
+      'identityRequested',
+      'ndaRecorded',
+      'sellerL2Approval',
+    ],
     tab: 'vault',
   },
-  { id: 'loi', label: 'Indicative LOI', keys: ['indicativeLoiSubmitted'], tab: 'buyer' },
+  {
+    id: 'loi',
+    label: 'Indicative LOI',
+    keys: ['indicativeLoiSubmitted'],
+    tab: 'buyer',
+  },
   {
     id: 'legal3',
     label: 'Legal & VDR (L3)',
-    keys: ['legalL3Approval', 'crossBorderApproval', 'noEscrowConfirmed', 'sellerFileApproval', 'vdrOpened'],
+    keys: [
+      'legalL3Approval',
+      'crossBorderApproval',
+      'noEscrowConfirmed',
+      'sellerFileApproval',
+      'vdrOpened',
+    ],
     tab: 'legal',
   },
   { id: 'techdd', label: 'Tech DD', keys: ['techDdSigned'], tab: 'tech' },
@@ -142,14 +249,28 @@ const macroStages: { id: string; label: string; keys: (keyof DealState)[]; tab: 
     keys: ['loiSubmitted', 'legalClosingChecklist', 'dealClosed'],
     tab: 'buyer',
   },
-  { id: 'handoff', label: 'Success Fee & Handoff', keys: ['successFeeRecorded', 'postDealHandoff'], tab: 'finance' },
+  {
+    id: 'handoff',
+    label: 'Success Fee & Handoff',
+    keys: ['successFeeRecorded', 'postDealHandoff'],
+    tab: 'finance',
+  },
 ]
 
 const buyerBrief = [
-  ['Năng lực cần mua', 'Phần mềm quản lý kho/vận hành B2B đã chạy tại nhà máy Việt Nam'],
-  ['Mục tiêu 24 tháng', 'Bản địa hóa sản phẩm, giữ đội kỹ thuật, mở rộng vào khách hàng Nhật tại Việt Nam'],
+  [
+    'Năng lực cần mua',
+    'Phần mềm quản lý kho/vận hành B2B đã chạy tại nhà máy Việt Nam',
+  ],
+  [
+    'Mục tiêu 24 tháng',
+    'Bản địa hóa sản phẩm, giữ đội kỹ thuật, mở rộng vào khách hàng Nhật tại Việt Nam',
+  ],
   ['Ngân sách / cỡ deal', '70–150 tỷ VND EV; sở hữu mục tiêu 25–35%'],
-  ['Timeline / decision path', 'LOI trong 90 ngày; closing 9–12 tháng; sponsor BU Nhật đã chỉ định'],
+  [
+    'Timeline / decision path',
+    'LOI trong 90 ngày; closing 9–12 tháng; sponsor BU Nhật đã chỉ định',
+  ],
 ]
 
 const sellerFacts = [
@@ -182,21 +303,105 @@ const vdrFiles = [
 const techFindings = [
   ['Architecture scalability', 'Major', '6-month fix', '180 triệu VND'],
   ['OSS license evidence', 'High', 'pre-closing must-fix', '90 triệu VND'],
-  ['Key-person dependency', 'Medium', 'defer', 'Không trừ giá; đưa vào condition'],
+  [
+    'Key-person dependency',
+    'Medium',
+    'defer',
+    'Không trừ giá; đưa vào condition',
+  ],
   ['Integration cost', 'Observation', 'growth investment', '320 triệu VND'],
 ]
 
 const financeRows = [
-  ['Prep package', '90 triệu', 'Record ngay sau seller ký chuẩn hóa hồ sơ', 'Không phụ thuộc deal có closing'],
-  ['Success fee M&A', '2% x phần vốn giao dịch', 'Expected', 'Ghi nhận khi closing'],
+  [
+    'Prep package',
+    '90 triệu',
+    'Record ngay sau seller ký chuẩn hóa hồ sơ',
+    'Không phụ thuộc deal có closing',
+  ],
+  [
+    'Success fee M&A',
+    '2% x phần vốn giao dịch',
+    'Expected',
+    'Ghi nhận khi closing',
+  ],
   ['Tech DD', '250 triệu', 'Config owner', 'Chưa chốt VAULT/Rikkei'],
   ['Build-to-Buy', '600 triệu', 'Opportunity', 'Scope nhẹ sau Tech DD'],
 ]
 
-export default function InvestorMvp() {
-  const [activeTab, setActiveTab] = useState<Tab>('buyer')
+const actionRoles: Record<keyof DealState, string> = {
+  buyerRequest: 'BUYER',
+  sellerProfile: 'SELLER',
+  prepPackageFeeRecorded: 'FINANCE',
+  sellerL1Approval: 'SELLER',
+  matchPrepared: 'VAULT_ADMIN',
+  identityRequested: 'BUYER',
+  ndaRecorded: 'VAULT_ADMIN',
+  sellerL2Approval: 'SELLER',
+  legalL3Approval: 'LEGAL',
+  crossBorderApproval: 'LEGAL',
+  noEscrowConfirmed: 'LEGAL',
+  sellerFileApproval: 'SELLER',
+  vdrOpened: 'VAULT_ADMIN',
+  techDdSigned: 'TECH_DD',
+  indicativeLoiSubmitted: 'BUYER',
+  loiSubmitted: 'BUYER',
+  legalClosingChecklist: 'LEGAL',
+  dealClosed: 'VAULT_ADMIN',
+  successFeeRecorded: 'FINANCE',
+  postDealHandoff: 'VAULT_ADMIN',
+}
+
+const roleTabs: Record<string, Tab> = {
+  BUYER: 'buyer',
+  SELLER: 'seller',
+  VAULT_ADMIN: 'vault',
+  LEGAL: 'legal',
+  TECH_DD: 'tech',
+  FINANCE: 'finance',
+}
+
+export default function InvestorMvp({ role, dealId: selectedDealId }: { role?: string; dealId?: string }) {
+  const [activeTab, setActiveTab] = useState<Tab>(
+    role ? roleTabs[role] || 'buyer' : 'buyer',
+  )
   const [deal, setDeal] = useState<DealState>(initialDeal)
+  const [dealId, setDealId] = useState('')
+  const [persistenceStatus, setPersistenceStatus] = useState(
+    'Đang tải thương vụ…',
+  )
   const [overrideReason, setOverrideReason] = useState('')
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const deals = selectedDealId ? [] : await request<DealRecord[]>('/deals')
+        const record = selectedDealId
+          ? await request<DealRecord>(`/deals/${selectedDealId}`)
+          : deals[0] ||
+          (await request<DealRecord>('/deals', {
+            method: 'POST',
+            body: JSON.stringify({}),
+          }))
+        if (!active) return
+        setDealId(record.id)
+        setDeal(record.state.steps)
+        setPersistenceStatus(`Đã lưu backend · bản sửa ${record.revision}`)
+      } catch (error) {
+        if (active)
+          setPersistenceStatus(
+            error instanceof Error
+              ? error.message
+              : 'Không tải được thương vụ.',
+          )
+      }
+    }
+    load()
+    return () => {
+      active = false
+    }
+  }, [selectedDealId])
 
   const progress = useMemo(() => {
     const done = steps.filter((step) => deal[step.key]).length
@@ -208,22 +413,81 @@ export default function InvestorMvp() {
     [],
   )
   const layer1Ready = deal.sellerL1Approval && deal.matchPrepared
-  const layer2Ready = deal.identityRequested && deal.ndaRecorded && deal.sellerL2Approval
+  const layer2Ready =
+    deal.identityRequested && deal.ndaRecorded && deal.sellerL2Approval
   const layer3Ready =
     layer2Ready &&
     deal.indicativeLoiSubmitted &&
     deal.legalL3Approval &&
     deal.crossBorderApproval &&
+    deal.noEscrowConfirmed &&
     deal.sellerFileApproval
 
   const nextStep = useMemo(() => steps.find((step) => !deal[step.key]), [deal])
 
-  const complete = (key: keyof DealState) =>
-    setDeal((current) => ({ ...current, [key]: true }))
-  const reset = () => {
-    setDeal(initialDeal)
+  const complete = async (key: keyof DealState) => {
+    if (!dealId) return
+    if (role !== actionRoles[key]) {
+      setPersistenceStatus(
+        `Action này thuộc vai trò ${actionRoles[key]}. Hãy đăng nhập đúng role.`,
+      )
+      return
+    }
+    setPersistenceStatus('Đang lưu…')
+    try {
+      const record = await request<DealRecord>(
+        `/deals/${dealId}/actions/${key}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ note: overrideReason }),
+        },
+      )
+      setDeal(record.state.steps)
+      setPersistenceStatus(`Đã lưu backend · bản sửa ${record.revision}`)
+    } catch (error) {
+      setPersistenceStatus(
+        error instanceof Error ? error.message : 'Không lưu được action.',
+      )
+    }
+  }
+  const reset = async () => {
+    if (!dealId) return
+    if (role !== 'VAULT_ADMIN') {
+      setPersistenceStatus('Chỉ VAULT Admin được reset thương vụ.')
+      return
+    }
+    const record = await request<DealRecord>(`/deals/${dealId}/reset`, {
+      method: 'POST',
+    })
+    setDeal(record.state.steps)
+    setPersistenceStatus(`Đã reset và lưu backend · bản sửa ${record.revision}`)
     setOverrideReason('')
     setActiveTab('buyer')
+  }
+  const completeSample = async () => {
+    if (!dealId) {
+      setPersistenceStatus('Thương vụ chưa tải xong. Vui lòng thử lại.')
+      return
+    }
+    if (role !== 'VAULT_ADMIN') {
+      setPersistenceStatus('Chỉ VAULT Admin được hoàn tất mẫu.')
+      return
+    }
+    setPersistenceStatus('Đang hoàn tất dữ liệu mẫu…')
+    try {
+      const record = await request<DealRecord>(
+        `/deals/${dealId}/complete-sample`,
+        { method: 'POST' },
+      )
+      setDeal(record.state.steps)
+      setPersistenceStatus(
+        `Đã hoàn tất mẫu và lưu backend · bản sửa ${record.revision}`,
+      )
+    } catch (error) {
+      setPersistenceStatus(
+        error instanceof Error ? error.message : 'Không hoàn tất được mẫu.',
+      )
+    }
   }
   const jumpTo = (tab: Tab) => setActiveTab(tab)
 
@@ -232,17 +496,36 @@ export default function InvestorMvp() {
       <div className="hero-panel compact-hero">
         <div className="hero-top">
           <div>
-            <p className="eyebrow">A–Z Deal Workspace · synthetic investor demo</p>
+            <p className="eyebrow">
+              A–Z Deal Workspace · synthetic investor demo
+            </p>
             <h1 id="az-title">VAULT Core — một thương vụ mẫu, đi từ A đến Z</h1>
           </div>
           <div className="hero-actions">
-            <button className="secondary" onClick={reset}>Reset demo</button>
-            <button onClick={() => setDeal(completedDeal)}>Hoàn tất mẫu</button>
+            <button
+              className="secondary"
+              onClick={reset}
+              disabled={role !== 'VAULT_ADMIN'}
+              title={role !== 'VAULT_ADMIN' ? 'Chỉ VAULT Admin' : ''}
+            >
+              Reset demo
+            </button>
+            <button
+              onClick={completeSample}
+              disabled={role !== 'VAULT_ADMIN'}
+              title={role !== 'VAULT_ADMIN' ? 'Chỉ VAULT Admin' : ''}
+            >
+              Hoàn tất mẫu
+            </button>
           </div>
         </div>
         <p className="hero-sub">
-          Japanese strategic buyer × Vietnamese warehouse-software seller — cùng một deal xuyên suốt
-          Buyer, Seller, VAULT Admin, Legal, Tech DD và Finance. Dữ liệu giả lập, chưa phải production.
+          Japanese strategic buyer × Vietnamese warehouse-software seller — cùng
+          một deal xuyên suốt Buyer, Seller, VAULT Admin, Legal, Tech DD và
+          Finance. Dữ liệu giả lập, chưa phải production.
+        </p>
+        <p className="muted" role="status">
+          Role hiện tại: {role || 'chưa đăng nhập'} · {persistenceStatus}
         </p>
       </div>
 
@@ -258,24 +541,101 @@ export default function InvestorMvp() {
 
         <StageTimeline deal={deal} macroStages={macroStages} onJump={jumpTo} />
 
-        <NextActionBanner nextStep={nextStep} onJump={() => nextStep && jumpTo(ownerTab[nextStep.owner])} />
+        <NextActionBanner
+          nextStep={nextStep}
+          onJump={() => nextStep && jumpTo(ownerTab[nextStep.owner])}
+        />
 
         <div className="mvp-grid three compact-metrics">
-          <Metric label="Layer 1" value={layer1Ready ? 'Open' : 'Locked'} note="Seller teaser approval" />
-          <Metric label="Layer 2" value={layer2Ready ? 'Open' : 'Locked'} note="NDA + seller approval" />
-          <Metric label="Layer 3" value={layer3Ready ? 'Open' : 'Locked'} note="Seller file + Legal/Compliance" />
+          <Metric
+            label="Layer 1"
+            value={layer1Ready ? 'Open' : 'Locked'}
+            note="Seller teaser approval"
+          />
+          <Metric
+            label="Layer 2"
+            value={layer2Ready ? 'Open' : 'Locked'}
+            note="NDA + seller approval"
+          />
+          <Metric
+            label="Layer 3"
+            value={layer3Ready ? 'Open' : 'Locked'}
+            note="Seller file + Legal/Compliance"
+          />
         </div>
       </div>
+
+      <section
+        className="workflow-directory"
+        aria-label="Danh mục chức năng MVP"
+      >
+        <div className="section-title compact-title">
+          <div>
+            <p className="eyebrow">Chức năng nghiệp vụ</p>
+            <h2>Toàn bộ workflow A–Z trong một workspace</h2>
+            <p className="muted">
+              Chọn vai trò để xem form, approval và công việc tương ứng. Các
+              bước bị khoá sẽ ghi rõ điều kiện cần hoàn tất trước.
+            </p>
+          </div>
+        </div>
+        <div className="workflow-directory-grid">
+          {macroStages.map((stage, index) => {
+            const done = stage.keys.every((key) => deal[key])
+            const completed = stage.keys.filter((key) => deal[key]).length
+            return (
+              <button
+                key={stage.id}
+                className={done ? 'directory-card done' : 'directory-card'}
+                onClick={() => jumpTo(stage.tab)}
+              >
+                <span className="directory-number">{index + 1}</span>
+                <span>
+                  <strong>{stage.label}</strong>
+                  <small>
+                    {completed}/{stage.keys.length} tác vụ hoàn tất
+                  </small>
+                </span>
+                <span aria-hidden="true">→</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       <DifferentiatorStrip deal={deal} />
 
       <details className="panel principles-details">
         <summary>Xem thêm nguyên tắc vận hành platform</summary>
         <div className="mvp-grid three">
-          <article className="decision-card"><h3>Buyer-first</h3><p>Bắt đầu từ nhu cầu mua cụ thể, không dựng marketplace đăng tin hàng loạt.</p></article>
-          <article className="decision-card"><h3>Mở theo lớp</h3><p>L1/L2/L3 có seller approval, NDA, Legal/Compliance và duyệt file riêng.</p></article>
-          <article className="decision-card"><h3>Definitive Offer sau DD</h3><p>Đề nghị chính thức chỉ đến sau VDR và Tech DD, khác LOI sơ bộ trước VDR.</p></article>
-          <article className="decision-card"><h3>Không production-ready</h3><p>Bản này dùng dữ liệu giả lập; cần auth, MFA, audit, VDR thật, watermark và scan file trước dữ liệu thật.</p></article>
+          <article className="decision-card">
+            <h3>Buyer-first</h3>
+            <p>
+              Bắt đầu từ nhu cầu mua cụ thể, không dựng marketplace đăng tin
+              hàng loạt.
+            </p>
+          </article>
+          <article className="decision-card">
+            <h3>Mở theo lớp</h3>
+            <p>
+              L1/L2/L3 có seller approval, NDA, Legal/Compliance và duyệt file
+              riêng.
+            </p>
+          </article>
+          <article className="decision-card">
+            <h3>Definitive Offer sau DD</h3>
+            <p>
+              Đề nghị chính thức chỉ đến sau VDR và Tech DD, khác LOI sơ bộ
+              trước VDR.
+            </p>
+          </article>
+          <article className="decision-card">
+            <h3>Không production-ready</h3>
+            <p>
+              Bản này dùng dữ liệu giả lập; cần auth, MFA, audit, VDR thật,
+              watermark và scan file trước dữ liệu thật.
+            </p>
+          </article>
         </div>
       </details>
 
@@ -303,7 +663,9 @@ export default function InvestorMvp() {
               layer3Ready={layer3Ready}
             />
           )}
-          {activeTab === 'seller' && <SellerTab deal={deal} complete={complete} />}
+          {activeTab === 'seller' && (
+            <SellerTab deal={deal} complete={complete} />
+          )}
           {activeTab === 'vault' && (
             <VaultTab
               deal={deal}
@@ -314,12 +676,181 @@ export default function InvestorMvp() {
               layer3Ready={layer3Ready}
             />
           )}
-          {activeTab === 'legal' && <LegalTab deal={deal} complete={complete} />}
-          {activeTab === 'tech' && <TechTab deal={deal} complete={complete} layer3Ready={layer3Ready} />}
-          {activeTab === 'finance' && <FinanceTab deal={deal} complete={complete} />}
+          {activeTab === 'legal' && (
+            <LegalTab deal={deal} complete={complete} />
+          )}
+          {activeTab === 'tech' && (
+            <TechTab
+              deal={deal}
+              complete={complete}
+              layer3Ready={layer3Ready}
+            />
+          )}
+          {activeTab === 'finance' && (
+            <FinanceTab deal={deal} complete={complete} />
+          )}
         </div>
         <NextGatesPanel tab={activeTab} deal={deal} />
       </div>
+    </section>
+  )
+}
+
+export function Workflow20Panel({
+  workflow,
+  role,
+  onComplete,
+}: {
+  workflow: WorkflowState
+  role?: string
+  onComplete: (
+    outcome: 'CONTINUE' | 'STOP',
+    note: string,
+    openedData: string[],
+  ) => void
+}) {
+  const [note, setNote] = useState('')
+  const [openedData, setOpenedData] = useState('')
+  const current = vaultWorkflow[workflow.current_step - 1]
+  const progress =
+    workflow.status === 'CLOSED'
+      ? 100
+      : Math.round(((workflow.current_step - 1) / 20) * 100)
+  return (
+    <section className="panel workflow-20-panel">
+      <div className="section-title">
+        <div>
+          <p className="eyebrow">Nguồn sự thật vận hành</p>
+          <h2>20 bước của một deal VAULT</h2>
+          <p className="muted">
+            Hệ thống theo dõi trạng thái, owner, quyền dữ liệu, điều kiện còn
+            thiếu và lý do tiếp tục hoặc dừng.
+          </p>
+        </div>
+        <span
+          className={`status-pill ${workflow.status === 'ACTIVE' ? 'warning' : 'ready'}`}
+        >
+          {workflow.status} · {progress}%
+        </span>
+      </div>
+      <div className="workflow-control-grid">
+        <article>
+          <span>Bước hiện tại</span>
+          <strong>
+            {workflow.current_step}. {current?.[0]}
+          </strong>
+        </article>
+        <article>
+          <span>Owner</span>
+          <strong>{current?.[1]}</strong>
+        </article>
+        <article>
+          <span>Dữ liệu đã mở</span>
+          <strong>
+            {workflow.opened_data.length
+              ? workflow.opened_data.join(', ')
+              : 'Chưa mở dữ liệu bảo mật'}
+          </strong>
+        </article>
+        <article>
+          <span>Điều kiện còn thiếu</span>
+          <strong>
+            {workflow.unmet_conditions[0] || 'Không còn điều kiện chặn'}
+          </strong>
+        </article>
+      </div>
+      <div className="workflow-20-grid">
+        {vaultWorkflow.map(([label, owner], index) => {
+          const number = index + 1
+          const done = workflow.history.some((item) => item.step === number)
+          const currentStep =
+            workflow.status === 'ACTIVE' && workflow.current_step === number
+          return (
+            <article
+              key={label}
+              className={`workflow-step ${done ? 'done' : ''} ${currentStep ? 'current' : ''}`}
+            >
+              <span>{done ? '✓' : number}</span>
+              <div>
+                <strong>{label}</strong>
+                <small>{owner}</small>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+      {workflow.status === 'ACTIVE' && (
+        <form
+          className="workflow-transition-form"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div>
+            <h3>Bàn giao bước {workflow.current_step}</h3>
+            <p className="muted">
+              {role === current?.[1]
+                ? 'Bạn đang là owner của bước này. Ghi lại bằng chứng trước khi chuyển bước.'
+                : `Đăng nhập ${current?.[1]} để xử lý bước hiện tại.`}
+            </p>
+          </div>
+          <label>
+            Ghi chú / bằng chứng hoàn thành
+            <textarea
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Ví dụ: Đã kiểm tra pháp nhân, người đại diện và decision maker."
+            />
+          </label>
+          <label>
+            Dữ liệu được mở ở bước này{' '}
+            <span className="muted">(phân cách bằng dấu phẩy)</span>
+            <input
+              value={openedData}
+              onChange={(event) => setOpenedData(event.target.value)}
+              placeholder="Ví dụ: L1 teaser, company registration"
+            />
+          </label>
+          <div className="actions">
+            <button
+              disabled={role !== current?.[1] || !note.trim()}
+              onClick={() =>
+                onComplete(
+                  'CONTINUE',
+                  note.trim(),
+                  openedData
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean),
+                )
+              }
+            >
+              Hoàn tất bước và tiếp tục
+            </button>
+            <button
+              className="secondary"
+              disabled={role !== current?.[1] || !note.trim()}
+              onClick={() =>
+                onComplete(
+                  'STOP',
+                  note.trim(),
+                  openedData
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean),
+                )
+              }
+            >
+              Dừng deal với lý do này
+            </button>
+          </div>
+        </form>
+      )}
+      {workflow.stop_reason && (
+        <p className="error-box">
+          <strong>Lý do dừng:</strong> {workflow.stop_reason}
+        </p>
+      )}
     </section>
   )
 }
@@ -330,18 +861,32 @@ function StageTimeline({
   onJump,
 }: {
   deal: DealState
-  macroStages: { id: string; label: string; keys: (keyof DealState)[]; tab: Tab }[]
+  macroStages: {
+    id: string
+    label: string
+    keys: (keyof DealState)[]
+    tab: Tab
+  }[]
   onJump: (tab: Tab) => void
 }) {
-  const currentIndex = stages.findIndex((stage) => stage.keys.some((key) => !deal[key]))
+  const currentIndex = stages.findIndex((stage) =>
+    stage.keys.some((key) => !deal[key]),
+  )
   return (
     <ol className="stage-timeline" aria-label="Tiến độ theo giai đoạn">
       {stages.map((stage, index) => {
-        const status = currentIndex === -1 || index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'locked'
+        const status =
+          currentIndex === -1 || index < currentIndex
+            ? 'done'
+            : index === currentIndex
+              ? 'current'
+              : 'locked'
         return (
           <li key={stage.id} className={`stage-${status}`}>
             <button type="button" onClick={() => onJump(stage.tab)}>
-              <span className="stage-index">{status === 'done' ? '✓' : index + 1}</span>
+              <span className="stage-index">
+                {status === 'done' ? '✓' : index + 1}
+              </span>
               <span className="stage-label">{stage.label}</span>
             </button>
           </li>
@@ -359,15 +904,23 @@ function NextActionBanner({
   onJump: () => void
 }) {
   if (!nextStep) {
-    return <div className="next-action-banner is-done">🎉 Deal đã hoàn tất A–Z — tất cả 20 bước đã xong.</div>
+    return (
+      <div className="next-action-banner is-done">
+        🎉 Deal đã hoàn tất A–Z — tất cả 20 bước đã xong.
+      </div>
+    )
   }
   return (
     <div className="next-action-banner">
       <div>
         <span className="eyebrow">Bước tiếp theo</span>
-        <p><strong>{nextStep.owner}</strong> · {nextStep.label}</p>
+        <p>
+          <strong>{nextStep.owner}</strong> · {nextStep.label}
+        </p>
       </div>
-      <button className="secondary" onClick={onJump}>Đi tới tab {nextStep.owner}</button>
+      <button className="secondary" onClick={onJump}>
+        Đi tới tab {nextStep.owner}
+      </button>
     </div>
   )
 }
@@ -393,7 +946,12 @@ function DifferentiatorStrip({ deal }: { deal: DealState }) {
   return (
     <div className="mvp-grid three differentiator-strip">
       {items.map((item, index) => (
-        <article key={item.title} className={item.done ? 'differentiator-card is-live' : 'differentiator-card'}>
+        <article
+          key={item.title}
+          className={
+            item.done ? 'differentiator-card is-live' : 'differentiator-card'
+          }
+        >
           <span className="differentiator-index">{index + 1}</span>
           <h3>{item.title}</h3>
           <p>{item.body}</p>
@@ -420,8 +978,15 @@ function RoleTabButton({
   onClick: () => void
 }) {
   const owner = tabOwner[tab.id]
-  const pending = steps.filter((step) => step.owner === owner && !deal[step.key])
-  const dotState = pending.length === 0 ? 'done' : nextStep?.owner === owner ? 'active' : 'waiting'
+  const pending = steps.filter(
+    (step) => step.owner === owner && !deal[step.key],
+  )
+  const dotState =
+    pending.length === 0
+      ? 'done'
+      : nextStep?.owner === owner
+        ? 'active'
+        : 'waiting'
   return (
     <button className={active ? 'active' : 'secondary'} onClick={onClick}>
       <span className="tab-top-row">
@@ -435,7 +1000,9 @@ function RoleTabButton({
 
 function NextGatesPanel({ tab, deal }: { tab: Tab; deal: DealState }) {
   const owner = tabOwner[tab]
-  const pending = steps.filter((step) => step.owner === owner && !deal[step.key])
+  const pending = steps.filter(
+    (step) => step.owner === owner && !deal[step.key],
+  )
   return (
     <aside className="side-panel">
       <div className="side-block">
@@ -473,7 +1040,10 @@ function BuyerTab({
 }) {
   return (
     <section className="panel">
-      <RoleHeader label="Buyer" title="1. Tạo nhu cầu mua và đi qua các lớp thông tin" />
+      <RoleHeader
+        label="Buyer"
+        title="1. Tạo nhu cầu mua và đi qua các lớp thông tin"
+      />
       <div className="mvp-grid two">
         <article className="decision-card">
           <h3>Buyer Request — 4 trường MVP</h3>
@@ -485,7 +1055,10 @@ function BuyerTab({
               </div>
             ))}
           </dl>
-          <ActionButton done={deal.buyerRequest} onClick={() => complete('buyerRequest')}>
+          <ActionButton
+            done={deal.buyerRequest}
+            onClick={() => complete('buyerRequest')}
+          >
             Lưu buyer request
           </ActionButton>
         </article>
@@ -519,8 +1092,8 @@ function BuyerTab({
         <article className="decision-card">
           <h3>Indicative LOI trước VDR</h3>
           <p>
-            Trước khi VAULT mở toàn bộ VDR và bỏ chi phí Tech DD, buyer phải có cam kết tối thiểu
-            bằng văn bản để bảo vệ seller và chi phí VAULT.
+            Trước khi VAULT mở toàn bộ VDR và bỏ chi phí Tech DD, buyer phải có
+            cam kết tối thiểu bằng văn bản để bảo vệ seller và chi phí VAULT.
           </p>
           <ActionButton
             done={deal.indicativeLoiSubmitted}
@@ -528,7 +1101,8 @@ function BuyerTab({
             lockedHint="Cần Layer 2 mở đủ điều kiện (NDA + Seller duyệt) trước."
             onClick={() => complete('indicativeLoiSubmitted')}
           >
-            Submit Indicative LOI (non-binding + đề nghị độc quyền đàm phán ngắn hạn)
+            Submit Indicative LOI (non-binding + đề nghị độc quyền đàm phán ngắn
+            hạn)
           </ActionButton>
         </article>
       </div>
@@ -538,13 +1112,15 @@ function BuyerTab({
         {layer3Ready ? (
           <ul>
             {vdrFiles.map(([folder, file]) => (
-              <li key={folder}><strong>{folder}:</strong> {file}</li>
+              <li key={folder}>
+                <strong>{folder}:</strong> {file}
+              </li>
             ))}
           </ul>
         ) : (
           <p>
-            Cần Indicative LOI + Legal/Compliance + Seller duyệt file nhạy cảm trước khi buyer xem L3.
-            Cam kết trước, mở hồ sơ sau.
+            Cần Indicative LOI + Legal/Compliance + Seller duyệt file nhạy cảm
+            trước khi buyer xem L3. Cam kết trước, mở hồ sơ sau.
           </p>
         )}
       </article>
@@ -552,8 +1128,9 @@ function BuyerTab({
       <article className="decision-card">
         <h3>Buyer final action</h3>
         <p>
-          Sau khi có đầy đủ thông tin từ VDR và Tech DD, Buyer gửi Đề nghị chính thức
-          (Definitive Offer). Đây khác với Indicative LOI sơ bộ nộp trước khi thấy hồ sơ nhạy cảm.
+          Sau khi có đầy đủ thông tin từ VDR và Tech DD, Buyer gửi Đề nghị chính
+          thức (Definitive Offer). Đây khác với Indicative LOI sơ bộ nộp trước
+          khi thấy hồ sơ nhạy cảm.
         </p>
         <ActionButton
           done={deal.loiSubmitted}
@@ -568,10 +1145,19 @@ function BuyerTab({
   )
 }
 
-function SellerTab({ deal, complete }: { deal: DealState; complete: (key: keyof DealState) => void }) {
+function SellerTab({
+  deal,
+  complete,
+}: {
+  deal: DealState
+  complete: (key: keyof DealState) => void
+}) {
   return (
     <section className="panel">
-      <RoleHeader label="Seller" title="2. Tạo hồ sơ, duyệt từng lớp mở thông tin" />
+      <RoleHeader
+        label="Seller"
+        title="2. Tạo hồ sơ, duyệt từng lớp mở thông tin"
+      />
       <div className="mvp-grid two">
         <article className="decision-card">
           <h3>Seller profile mẫu</h3>
@@ -583,7 +1169,10 @@ function SellerTab({ deal, complete }: { deal: DealState; complete: (key: keyof 
               </div>
             ))}
           </dl>
-          <ActionButton done={deal.sellerProfile} onClick={() => complete('sellerProfile')}>
+          <ActionButton
+            done={deal.sellerProfile}
+            onClick={() => complete('sellerProfile')}
+          >
             Tạo seller profile từ sample data
           </ActionButton>
         </article>
@@ -647,22 +1236,35 @@ function VaultTab({
   const openTasks = steps.filter((step) => !deal[step.key]).slice(0, 6)
   return (
     <section className="panel">
-      <RoleHeader label="VAULT Admin" title="3. Trung tâm điều phối pipeline / matching / approvals / VDR / Tech DD / Finance" />
+      <RoleHeader
+        label="VAULT Admin"
+        title="3. Trung tâm điều phối pipeline / matching / approvals / VDR / Tech DD / Finance"
+      />
       <div className="mvp-grid two">
         <article className="decision-card">
           <h3>Task list theo role</h3>
           <ul>
             {openTasks.map((task) => (
-              <li key={task.key}><strong>{task.owner}:</strong> {task.label}</li>
+              <li key={task.key}>
+                <strong>{task.owner}:</strong> {task.label}
+              </li>
             ))}
           </ul>
           {openTasks.length === 0 && <p>Tất cả task A–Z đã hoàn tất.</p>}
         </article>
         <article className="decision-card">
           <h3>Matching rule-based</h3>
-          <p><strong>Score:</strong> {matchScore}/40</p>
-          <p><strong>Lý do match:</strong> buyer cần warehouse B2B, seller có sản phẩm và đội kỹ thuật, cỡ deal khớp.</p>
-          <p><strong>3 risks:</strong> người ký cuối, IP/code ownership, cross-border data.</p>
+          <p>
+            <strong>Score:</strong> {matchScore}/40
+          </p>
+          <p>
+            <strong>Lý do match:</strong> buyer cần warehouse B2B, seller có sản
+            phẩm và đội kỹ thuật, cỡ deal khớp.
+          </p>
+          <p>
+            <strong>3 risks:</strong> người ký cuối, IP/code ownership,
+            cross-border data.
+          </p>
           <ActionButton
             done={deal.matchPrepared}
             disabled={!deal.buyerRequest || !deal.sellerL1Approval}
@@ -714,14 +1316,19 @@ function VaultTab({
         </article>
         <article className="decision-card">
           <h3>Override with reason</h3>
-          <p>Admin không override im lặng. Nếu cần vượt chặn demo, phải nhập lý do.</p>
+          <p>
+            Admin không override im lặng. Nếu cần vượt chặn demo, phải nhập lý
+            do.
+          </p>
           <textarea
             rows={4}
             value={overrideReason}
             onChange={(event) => setOverrideReason(event.target.value)}
             placeholder="Ví dụ: Sponsor phê duyệt tạm để demo investor, chưa dùng dữ liệu thật."
           />
-          <span className={overrideReason ? 'status-pill warning' : 'status-pill'}>
+          <span
+            className={overrideReason ? 'status-pill warning' : 'status-pill'}
+          >
             {overrideReason ? 'Override reason recorded' : 'No override reason'}
           </span>
         </article>
@@ -730,10 +1337,19 @@ function VaultTab({
   )
 }
 
-function LegalTab({ deal, complete }: { deal: DealState; complete: (key: keyof DealState) => void }) {
+function LegalTab({
+  deal,
+  complete,
+}: {
+  deal: DealState
+  complete: (key: keyof DealState) => void
+}) {
   return (
     <section className="panel">
-      <RoleHeader label="Legal/Compliance" title="4. Kiểm soát L3, cross-border data, escrow và closing" />
+      <RoleHeader
+        label="Legal/Compliance"
+        title="4. Kiểm soát L3, cross-border data, escrow và closing"
+      />
       <div className="mvp-grid two">
         <article className="decision-card">
           <h3>Legal approvals</h3>
@@ -754,7 +1370,10 @@ function LegalTab({ deal, complete }: { deal: DealState; complete: (key: keyof D
             >
               Approve cross-border data access
             </ActionButton>
-            <ActionButton done={deal.noEscrowConfirmed} onClick={() => complete('noEscrowConfirmed')}>
+            <ActionButton
+              done={deal.noEscrowConfirmed}
+              onClick={() => complete('noEscrowConfirmed')}
+            >
               Confirm VAULT does not hold money/shares
             </ActionButton>
             <ActionButton
@@ -770,10 +1389,13 @@ function LegalTab({ deal, complete }: { deal: DealState; complete: (key: keyof D
         <article className="decision-card">
           <h3>Book B locked</h3>
           <p>
-            Huy động rộng/cổ tức/mua lại không được mở như sản phẩm. MVP chỉ ghi risk/checklist;
-            nghĩa vụ trả thuộc bên phát hành, không thuộc VAULT.
+            Huy động rộng/cổ tức/mua lại không được mở như sản phẩm. MVP chỉ ghi
+            risk/checklist; nghĩa vụ trả thuộc bên phát hành, không thuộc VAULT.
           </p>
-          <p className="notice">Nếu cross-border chưa approve, Buyer không được xem L2/L3 trong demo chuẩn.</p>
+          <p className="notice">
+            Nếu cross-border chưa approve, Buyer không được xem L2/L3 trong demo
+            chuẩn.
+          </p>
         </article>
       </div>
     </section>
@@ -791,19 +1413,32 @@ function TechTab({
 }) {
   return (
     <section className="panel">
-      <RoleHeader label="Tech DD" title="5. Checklist 6 trục, findings và remediation cost" />
+      <RoleHeader
+        label="Tech DD"
+        title="5. Checklist 6 trục, findings và remediation cost"
+      />
       <p className="notice">
-        Tech DD bắt đầu sau khi buyer đã nộp Indicative LOI và được mở L3/VDR. Output MVP = checklist + findings + remediation cost;
-        report builder để phase sau.
+        Tech DD bắt đầu sau khi buyer đã nộp Indicative LOI và được mở L3/VDR.
+        Output MVP = checklist + findings + remediation cost; report builder để
+        phase sau.
       </p>
       <div className="table-scroll">
         <table className="mvp-table">
           <thead>
-            <tr><th>Finding</th><th>Severity</th><th>Remediation class</th><th>Cost / deal impact</th></tr>
+            <tr>
+              <th>Finding</th>
+              <th>Severity</th>
+              <th>Remediation class</th>
+              <th>Cost / deal impact</th>
+            </tr>
           </thead>
           <tbody>
             {techFindings.map((row) => (
-              <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
+              <tr key={row[0]}>
+                {row.map((cell) => (
+                  <td key={cell}>{cell}</td>
+                ))}
+              </tr>
             ))}
           </tbody>
         </table>
@@ -820,15 +1455,25 @@ function TechTab({
   )
 }
 
-function FinanceTab({ deal, complete }: { deal: DealState; complete: (key: keyof DealState) => void }) {
+function FinanceTab({
+  deal,
+  complete,
+}: {
+  deal: DealState
+  complete: (key: keyof DealState) => void
+}) {
   return (
     <section className="panel">
-      <RoleHeader label="Finance" title="6. Tracking phí, invoice, collected, overdue" />
+      <RoleHeader
+        label="Finance"
+        title="6. Tracking phí, invoice, collected, overdue"
+      />
       <article className="decision-card highlight-card">
         <h3>Phí gói chuẩn bị</h3>
         <p>
-          Phí này thu ngay khi seller ký hợp đồng chuẩn hóa hồ sơ, không phụ thuộc deal sau này
-          có đóng hay không. VAULT có doanh thu từ giai đoạn chuẩn bị, không chỉ ăn success fee.
+          Phí này thu ngay khi seller ký hợp đồng chuẩn hóa hồ sơ, không phụ
+          thuộc deal sau này có đóng hay không. VAULT có doanh thu từ giai đoạn
+          chuẩn bị, không chỉ ăn success fee.
         </p>
         <ActionButton
           done={deal.prepPackageFeeRecorded}
@@ -843,11 +1488,20 @@ function FinanceTab({ deal, complete }: { deal: DealState; complete: (key: keyof
       <div className="table-scroll">
         <table className="mvp-table">
           <thead>
-            <tr><th>Revenue line</th><th>Amount/default</th><th>Status</th><th>Note</th></tr>
+            <tr>
+              <th>Revenue line</th>
+              <th>Amount/default</th>
+              <th>Status</th>
+              <th>Note</th>
+            </tr>
           </thead>
           <tbody>
             {financeRows.map((row) => (
-              <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
+              <tr key={row[0]}>
+                {row.map((cell) => (
+                  <td key={cell}>{cell}</td>
+                ))}
+              </tr>
             ))}
           </tbody>
         </table>
@@ -855,11 +1509,19 @@ function FinanceTab({ deal, complete }: { deal: DealState; complete: (key: keyof
       <div className="mvp-grid two">
         <article className="decision-card">
           <h3>Closing state</h3>
-          <p>{deal.dealClosed ? 'SPA signed / deal closed giả lập.' : 'Chưa closing. Cần LOI + legal closing checklist.'}</p>
+          <p>
+            {deal.dealClosed
+              ? 'SPA signed / deal closed giả lập.'
+              : 'Chưa closing. Cần LOI + legal closing checklist.'}
+          </p>
         </article>
         <article className="decision-card">
           <h3>Success fee</h3>
-          <p>Phí gói chuẩn bị đã ghi ở bước 2.5; màn này tổng hợp thêm success fee/Tech DD/Build-to-Buy phát sinh khi đóng deal. Không sync Excel model; app tracking actuals.</p>
+          <p>
+            Phí gói chuẩn bị đã ghi ở bước 2.5; màn này tổng hợp thêm success
+            fee/Tech DD/Build-to-Buy phát sinh khi đóng deal. Không sync Excel
+            model; app tracking actuals.
+          </p>
           <ActionButton
             done={deal.successFeeRecorded}
             disabled={!deal.dealClosed}
@@ -885,7 +1547,15 @@ function RoleHeader({ label, title }: { label: string; title: string }) {
   )
 }
 
-function Metric({ label, value, note }: { label: string; value: string; note: string }) {
+function Metric({
+  label,
+  value,
+  note,
+}: {
+  label: string
+  value: string
+  note: string
+}) {
   return (
     <article className="metric-card small">
       <span>{label}</span>
@@ -911,13 +1581,23 @@ function ActionButton({
   const state = done ? 'done' : disabled ? 'locked' : 'available'
   return (
     <div className="action-slot">
-      <button className={`action-btn state-${state}`} disabled={done || disabled} onClick={onClick}>
+      <button
+        className={`action-btn state-${state}`}
+        disabled={done || disabled}
+        onClick={onClick}
+      >
         <span className="action-btn-state">
-          {state === 'done' ? '✓ Hoàn tất' : state === 'locked' ? '🔒 Khoá' : '● Sẵn sàng'}
+          {state === 'done'
+            ? '✓ Hoàn tất'
+            : state === 'locked'
+              ? '🔒 Khoá'
+              : '● Sẵn sàng'}
         </span>
         <span className="action-btn-label">{children}</span>
       </button>
-      {state === 'locked' && lockedHint && <p className="locked-hint">{lockedHint}</p>}
+      {state === 'locked' && lockedHint && (
+        <p className="locked-hint">{lockedHint}</p>
+      )}
     </div>
   )
 }

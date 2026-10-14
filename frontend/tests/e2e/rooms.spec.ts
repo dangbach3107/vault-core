@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
+import { authHeaders, loginAs } from './auth'
 
 const fixture = (name: string) =>
   fileURLToPath(new URL(`../../../.tmp/fixtures/${name}`, import.meta.url))
@@ -10,10 +11,13 @@ test('room folders, upload, preview and immutable version history', async ({
   const name = `Doanh nghiệp VDR giả lập ${Date.now()}`
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  const headers = await authHeaders(page.request)
   const created = await page.request.post('/api/v1/companies', {
     data: { company_name: { value: name } },
+    headers,
   })
   expect(created.status()).toBe(201)
+  await loginAs(page)
   await page.goto('/#/rooms')
   await page
     .getByRole('button', { name: 'Tạo phòng dữ liệu', exact: true })
@@ -71,7 +75,7 @@ test('room folders, upload, preview and immutable version history', async ({
     )
     .toBe(800)
   const download1 = page.waitForEvent('download')
-  await page.getByRole('link', { name: 'Tải file phiên bản này' }).click()
+  await page.getByRole('button', { name: 'Tải file phiên bản này' }).click()
   expect((await download1).suggestedFilename()).toBe('sample-v1.png')
   await page
     .getByRole('button', { name: 'Thêm phiên bản', exact: true })

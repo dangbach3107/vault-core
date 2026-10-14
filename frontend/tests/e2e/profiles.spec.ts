@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { loginAs } from './auth'
 
 test('create, persist, edit and preview a company through the real API and PostgreSQL', async ({
   page,
@@ -6,6 +7,7 @@ test('create, persist, edit and preview a company through the real API and Postg
   const name = `Doanh nghiệp giả lập ${Date.now()}`
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
+  await loginAs(page)
   await page.goto('/#/companies')
   await page.getByRole('link', { name: 'Thêm doanh nghiệp', exact: true }).click()
   await page.getByLabel('Tên doanh nghiệp *', { exact: true }).fill(name)

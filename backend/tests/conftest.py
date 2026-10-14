@@ -25,6 +25,9 @@ def client(postgres_engine, tmp_path):
         app.state.session_factory = sessionmaker(bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint")
         try:
             with TestClient(app) as api:
+                login = api.post("/api/v1/auth/login", json={"username": "admin", "password": "vault-demo"})
+                assert login.status_code == 200
+                api.headers["Authorization"] = f'Bearer {login.json()["access_token"]}'
                 yield api
         finally:
             transaction.rollback()

@@ -3,6 +3,8 @@ import type { RoomDetail, DocumentDetail } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
+import { request } from '../../api/workspace'
+import ActionDialog from '../../components/ActionDialog'
 
 function extOf(name: string) {
   const i = name.lastIndexOf('.')
@@ -23,6 +25,9 @@ export default function RoomPage({
     created ? 'Đã tạo phòng dữ liệu với sáu nhóm thư mục.' : '',
   )
   const [uploading, setUploading] = useState(false)
+  const [deleting, setDeleting] = useState('')
+  const [error, setError] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<null | { kind: 'room' } | { kind: 'document'; document: RoomDetail['documents'][number] }>(null)
   function onSaved(document: DocumentDetail) {
     setMessage(
       `Đã tải lên “${document.title}”, phiên bản ${document.current_version}.`,
@@ -30,6 +35,31 @@ export default function RoomPage({
     setUploading(false)
     setSelected(document.id)
     result.retry()
+  }
+  async function deleteDocument(document: RoomDetail['documents'][number]) {
+    setDeleting(document.id)
+    setError('')
+    try {
+      await request<void>(`/rooms/${id}/documents/${document.id}`, { method: 'DELETE' })
+      setMessage(`Đã xóa tài liệu “${document.title}”.`)
+      result.retry()
+    } catch (reason) {
+      setError((reason as Error).message)
+    } finally {
+      setDeleting('')
+      setPendingDelete(null)
+    }
+  }
+  async function deleteRoom() {
+    setDeleting('room')
+    setError('')
+    try {
+      await request<void>(`/rooms/${id}`, { method: 'DELETE' })
+      location.hash = '/rooms'
+    } catch (reason) {
+      setError((reason as Error).message)
+      setDeleting('')
+    }
   }
   if (!result.data) return <LoadState {...result} />
   const room = result.data
@@ -45,15 +75,17 @@ export default function RoomPage({
           <h2>{room.title}</h2>
           <a href={`#/companies/${room.company_id}`}>{room.company_name}</a>
         </div>
-        <button onClick={() => setUploading(!uploading)}>
-          {uploading ? 'Đóng form upload' : 'Thêm tài liệu'}
-        </button>
+        <div className="actions">
+          <button onClick={() => setUploading(!uploading)}>{uploading ? 'Đóng form upload' : 'Thêm tài liệu'}</button>
+          <button className="danger-button" onClick={() => setPendingDelete({ kind: 'room' })} disabled={deleting === 'room'}>{deleting === 'room' ? 'Đang xóa…' : 'Xóa phòng'}</button>
+        </div>
       </div>
       {message && (
         <p role="status" className="success-box">
           {message}
         </p>
       )}
+      {error && <p role="alert" className="error-box">{error}</p>}
       {uploading && <UploadForm room={room} onSaved={onSaved} />}
       <div className="room-layout three">
         <aside className="folder-list" aria-label="Nhóm thư mục">
@@ -93,6 +125,7 @@ export default function RoomPage({
                     <th>Dung lượng</th>
                     <th>Phiên bản</th>
                     <th>Tải lên</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -115,6 +148,11 @@ export default function RoomPage({
                         {new Date(
                           document.latest.uploaded_at,
                         ).toLocaleString('vi-VN')}
+                      </td>
+                      <td>
+                        <button className="danger-button" onClick={() => setPendingDelete({ kind: 'document', document })} disabled={deleting === document.id}>
+                          {deleting === document.id ? 'Đang xóa…' : 'Xóa'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -144,6 +182,15 @@ export default function RoomPage({
           )}
         </aside>
       </div>
+      {pendingDelete && <ActionDialog
+        title={pendingDelete.kind === 'room' ? `Xóa phòng “${room.title}”?` : `Xóa tài liệu “${pendingDelete.document.title}”?`}
+        description={pendingDelete.kind === 'room' ? 'Toàn bộ tài liệu và mọi phiên bản trong phòng sẽ bị xóa vĩnh viễn.' : 'Tài liệu và toàn bộ lịch sử phiên bản sẽ bị xóa vĩnh viễn.'}
+        confirmLabel={pendingDelete.kind === 'room' ? 'Xóa phòng dữ liệu' : 'Xóa tài liệu'}
+        danger
+        busy={Boolean(deleting)}
+        onCancel={() => setPendingDelete(null)}
+        onSubmit={() => pendingDelete.kind === 'room' ? deleteRoom() : deleteDocument(pendingDelete.document)}
+      />}
     </section>
   )
 }
