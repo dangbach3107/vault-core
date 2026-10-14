@@ -6,10 +6,10 @@ from zipfile import ZipFile
 from PIL import Image
 from pypdf import PdfWriter
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
-from backend.app.db.models import DocumentVersion
+from backend.app.db.models import DocumentVersion, DocumentBlob
 from backend.app.services.files import stored_path
 
 
@@ -28,6 +28,11 @@ def new_room(client, title="Synthetic deal"):
 
 def upload(client, room, content=None, name="evidence.png", folder="LEGAL_CORPORATE"):
     return client.post(f'/api/v1/rooms/{room["id"]}/documents', data={"title": "Evidence", "folder": folder, "note": "Synthetic v1"}, files={"file": (name, png() if content is None else content, "application/octet-stream")})
+
+
+def blob_count(client):
+    with client.app.state.session_factory() as session:
+        return session.scalar(select(func.count()).select_from(DocumentBlob))
 
 
 def test_room_six_folders_upload_versions_and_scoping(client):
@@ -79,7 +84,7 @@ def test_rejected_upload_has_no_partial_record_or_blob(client, name, body, statu
     response = upload(client, room, body, name)
     assert response.status_code == status, response.text
     assert client.get(f'/api/v1/rooms/{room["id"]}').json()["documents"] == []
-    assert list(client.app.state.settings.upload_directory.glob("*.blob")) == []
+    assert blob_count(client) == 0
 
 
 def test_invalid_folder_and_failed_version_preserve_old_file(client):
@@ -92,11 +97,10 @@ def test_invalid_folder_and_failed_version_preserve_old_file(client):
     assert client.get(path + "/versions/1/content").content == png()
 
 
-def test_commit_failure_removes_only_new_blob(client, monkeypatch):
+def test_commit_failure_stores_no_new_blob(client, monkeypatch):
     room = new_room(client)
     document = upload(client, room).json()
-    root = client.app.state.settings.upload_directory
-    old_files = set(root.glob("*.blob"))
+    old_count = blob_count(client)
     session_class = client.app.state.session_factory.class_
     with monkeypatch.context() as patch:
         def fail_commit(self):
@@ -104,7 +108,7 @@ def test_commit_failure_removes_only_new_blob(client, monkeypatch):
         patch.setattr(session_class, "commit", fail_commit)
         response = client.post(f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}/versions', files={"file": ("new.png", png("blue"))})
         assert response.status_code == 503
-    assert set(root.glob("*.blob")) == old_files
+    assert blob_count(client) == old_count
     assert client.get(f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}').json()["current_version"] == 1
 
 
@@ -129,18 +133,36 @@ def test_pdf_and_office_download_behavior(client):
     assert response.headers["content-disposition"].startswith("attachment")
 
 
-def test_missing_blob_is_reported_without_losing_metadata(client):
+def test_modified_or_missing_blob_is_reported_without_losing_metadata(client):
     room = new_room(client)
     document = upload(client, room).json()
+    content = f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}/versions/1/content'
     with client.app.state.session_factory() as session:
         version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == UUID(document["id"])))
-        path = stored_path(client.app.state.settings, version.storage_key)
-        path.write_bytes(b"Modified outside application")
-        assert client.get(f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}/versions/1/content').status_code == 503
-        path.unlink()  # exact synthetic blob inside this test's temporary directory
-    path = f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}'
-    assert client.get(path + "/versions/1/content").status_code == 503
-    assert client.get(path).status_code == 200
+        key = version.storage_key
+        original = session.get(DocumentBlob, key).content
+        session.get(DocumentBlob, key).content = b"Modified outside application"
+        session.commit()
+        assert client.get(content).status_code == 503
+        session.delete(session.get(DocumentBlob, key))
+        session.commit()
+    assert client.get(content).status_code == 503
+    assert client.get(f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}').status_code == 200
+    assert original == png()
+
+
+def test_legacy_disk_file_is_still_served(client):
+    room = new_room(client)
+    document = upload(client, room).json()
+    content = f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}/versions/1/content'
+    with client.app.state.session_factory() as session:
+        key = session.scalar(select(DocumentVersion.storage_key).where(DocumentVersion.document_id == UUID(document["id"])))
+        session.delete(session.get(DocumentBlob, key))
+        session.commit()
+    root = client.app.state.settings.upload_directory
+    root.mkdir(parents=True, exist_ok=True)
+    (root / key).write_bytes(png())
+    assert client.get(content).content == png()
 
 
 def test_streamed_request_body_limit(client):
@@ -153,20 +175,18 @@ def test_delete_document_removes_all_versions_and_blobs(client):
     document = upload(client, room).json()
     path = f'/api/v1/rooms/{room["id"]}/documents/{document["id"]}'
     assert client.post(path + "/versions", files={"file": ("v2.png", png("blue"))}).status_code == 201
-    blobs = list(client.app.state.settings.upload_directory.glob("*.blob"))
-    assert len(blobs) == 2
+    assert blob_count(client) == 2
     assert client.delete(path).status_code == 204
     assert client.get(path).status_code == 404
     assert client.get(f'/api/v1/rooms/{room["id"]}').json()["documents"] == []
-    assert all(not blob.exists() for blob in blobs)
+    assert blob_count(client) == 0
 
 
 def test_delete_room_removes_documents_versions_and_blobs(client):
     room = new_room(client)
     upload(client, room)
     upload(client, room, name="second.png", folder="TECHNOLOGY_IP")
-    blobs = list(client.app.state.settings.upload_directory.glob("*.blob"))
-    assert len(blobs) == 2
+    assert blob_count(client) == 2
     assert client.delete(f'/api/v1/rooms/{room["id"]}').status_code == 204
     assert client.get(f'/api/v1/rooms/{room["id"]}').status_code == 404
-    assert all(not blob.exists() for blob in blobs)
+    assert blob_count(client) == 0

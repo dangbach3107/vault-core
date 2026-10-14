@@ -2555,6 +2555,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many failed attempts."
           }
         },
         "summary": "Login",

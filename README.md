@@ -374,3 +374,11 @@ https://frontend-xi-eosin-36.vercel.app/#/investor-mvp
 3. Tạo hồ sơ giả lập, tạo phòng dữ liệu, upload file PNG/PDF/TXT nhỏ, reload trang và kiểm tra dữ liệu/file còn nguyên.
 
 Nếu health chạy nhưng hồ sơ/phòng dữ liệu lỗi 403, kiểm tra lại `ALLOWED_HOSTS` và `ALLOWED_ORIGINS`. Nếu lỗi 503 database, kiểm tra `DATABASE_URL` và migration trong Render build log. Nếu upload xong nhưng mất file sau restart, kiểm tra persistent disk/mount path và `UPLOAD_DIRECTORY`.
+
+## Vận hành
+
+- **Tài liệu tải lên** lưu trong PostgreSQL (bảng `document_blobs`), cùng giao dịch với metadata nên không mất khi Render khởi động lại và không bao giờ có file mồ côi. Tệp cũ ghi ra đĩa trước đây vẫn đọc được. Giới hạn mỗi tệp: `MAX_UPLOAD_BYTES` (mặc định 10 MB). Gói Neon miễn phí có 1 GB cho toàn bộ dữ liệu; theo dõi dung lượng trong Neon Console.
+- **Sao lưu**: `DATABASE_URL=postgresql://... ./scripts/backup-db.sh` tạo file `backups/vault-YYYYMMDD-HHMMSS.sql.gz` (gồm cả tài liệu). Neon miễn phí chỉ giữ lịch sử khôi phục vài giờ, hãy chạy script này định kỳ và cất file ở nơi an toàn. Khôi phục: `gunzip -c file.sql.gz | psql "$DB_ĐÍCH"`.
+- **Đăng nhập sai**: 5 lần sai trong 15 phút sẽ khóa tài khoản đó 15 phút (HTTP 429); 30 lần sai từ một IP cũng bị khóa. Bộ đếm nằm trong bộ nhớ, nên khởi động lại service sẽ xóa.
+- **Header bảo mật** (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, và HSTS khi `ENVIRONMENT=production`) do backend tự gắn.
+- **Trang pháp lý** (`#/terms`, `#/privacy`, `#/contact`): nội dung ở `frontend/src/features/legal/content.ts`; điền email liên hệ vào `siteInfo.ts`.

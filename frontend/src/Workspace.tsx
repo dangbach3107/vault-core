@@ -12,6 +12,9 @@ import VaultHome from './features/vault/VaultHome'
 import AccessWorkspace from './features/access/AccessWorkspace'
 import Landing from './features/landing/Landing'
 import Logo from './components/Logo'
+import LegalPage, { LegalLinks } from './features/legal/LegalPage'
+import { legalPaths } from './features/legal/paths'
+import NotFound from './components/NotFound'
 import RoleAvatar from './components/RoleAvatar'
 import { ROLE_META } from './features/auth/roles'
 import Login from './features/auth/Login'
@@ -93,6 +96,26 @@ const navigation: {
     roles: ['SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD'],
   },
 ]
+
+const knownPaths = new Set([
+  '/vault',
+  '/investor-mvp',
+  '/access',
+  '/disclosures',
+  '/companies',
+  '/companies/new',
+  '/rooms',
+  '/deals',
+  '/health',
+])
+
+/** True for any route the app can render (permissions are checked separately). */
+function isKnownRoute(path: string) {
+  return (
+    knownPaths.has(path) ||
+    ['companies', 'rooms', 'deals'].includes(path.split('/')[1] ?? '')
+  )
+}
 
 function routeAllowed(path: string, role?: Role) {
   if (!role || path === '/investor-mvp') return false
@@ -241,6 +264,7 @@ export default function Workspace() {
       </div>
     )
   if (path === '/welcome') return <Landing signedIn={Boolean(session)} />
+  if (legalPaths[path]) return <LegalPage kind={legalPaths[path]} />
   let screen = <CompanyList />
   if (hostedWithoutBackend && needsBackend(path))
     screen = <BackendRequiredNotice target={path} />
@@ -277,12 +301,7 @@ export default function Workspace() {
       ) : (
         <CompanyDetail id={parts[1]} saved={hash.includes('saved=1')} />
       )
-  else if (path !== '/companies')
-    screen = (
-      <p className="not-found">
-        Không tìm thấy trang. <a href="#/companies">Về danh sách</a>
-      </p>
-    )
+  else if (path !== '/companies') screen = <NotFound />
   const crumbs = crumb(path)
   if (!session && !hostedWithoutBackend) return <Login onLogin={setSession} />
   return (
@@ -376,11 +395,13 @@ export default function Workspace() {
           ) : null}
         </div>
         <header className="context-bar">
-          <h1>{titleOf(path)}</h1>
+          <h1>{isKnownRoute(path) ? titleOf(path) : 'Không tìm thấy trang'}</h1>
         </header>
         <div key={hash} className="workspace-content">
           {hostedWithoutBackend ? (
             screen
+          ) : session && !isKnownRoute(path) ? (
+            <NotFound />
           ) : session && routeAllowed(path, session.user.role) ? (
             screen
           ) : session ? (
@@ -403,6 +424,7 @@ export default function Workspace() {
           <span>
             VAULT · Verified Access to Unlisted Listings & Transactions
           </span>
+          <LegalLinks />
           <a href="#/health">Kết nối API</a>
         </footer>
       </div>
