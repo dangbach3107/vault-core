@@ -1,8 +1,5 @@
 # Yêu cầu VAULT
 
-<<<<<<< Updated upstream
-Cập nhật **2026-09-13**. Nguồn kịch bản: [Work-flow.txt](../VAULT_text/Work-flow.txt). Quyết định D-13 trong [PROJECT.md](PROJECT.md).
-=======
 Cập nhật: **2026-10-08**.
 
 ## P1 — Deal workspace MVP có persistence
@@ -22,7 +19,6 @@ Cập nhật: **2026-10-08**.
 | P1-11 | Buyer gửi access request; Seller/Legal duyệt hoặc từ chối và bắt buộc expiry khi duyệt; Seller/Legal/VAULT Admin được revoke; mọi thay đổi sinh access event |
 | P1-12 | Chức năng mới có route/component độc lập và xuất hiện theo role trên VAULT module hub; không triển khai thêm nghiệp vụ trong màn synthetic A–Z |
 | P1-13 | RBAC đăng nhập lọc navigation/route theo role và backend từ chối mutation trái role; disclosure approval là nghiệp vụ trong deal, không đồng nhất với RBAC |
->>>>>>> Stashed changes
 
 V1-01–V1-12 (pilot vận hành: MFA, VDR mua ngoài, ma trận đã ký) **vẫn chưa đạt**. MVP-01 / MVP-02 **đã làm** (hồ sơ + phòng local). FLOW-01–15 là increment **kế tiếp khi được phép code**.
 
@@ -57,9 +53,6 @@ Một deal giả. Nút sau **khóa** và nêu bước thiếu (tiếng Việt). 
 
 **ENG-04 (khi code):** hai aggregate — `disclosures` (A, `0003`, FLOW-01–08) và `closings` (B, `0004`, FLOW-09–15). Không bảng `deals` chung. Chi tiết: [ROADMAP.md](ROADMAP.md).
 
-<<<<<<< Updated upstream
-Nghiệm thu A trên `#/disclosures` (8/8). Nghiệm thu B trên `#/closings` (7/7, seed L3 xong). Không e2e 15 bước trong PR của A hoặc B.
-=======
 | ID | Yêu cầu | Ghi chú |
 | --- | --- | --- |
 | BE-01 | Persist A–Z deal state vào PostgreSQL | Đã có ở mức synthetic MVP (`deals`, revision `0003`) |
@@ -71,7 +64,6 @@ Nghiệm thu A trên `#/disclosures` (8/8). Nghiệm thu B trên `#/closings` (7
 | VDR-02 | Người dùng có thể xóa tài liệu (gồm mọi phiên bản) hoặc cả phòng dữ liệu sau bước xác nhận; metadata và blob local tương ứng được dọn | MVP local |
 | FILE-01 | Watermark + antivirus/file scan | Chưa có |
 | LEGAL-01 | Retention/deletion policy | Chưa chốt |
->>>>>>> Stashed changes
 
 ## V1 vận hành (giữ để khỏi nhầm MVP)
 

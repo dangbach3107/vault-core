@@ -1,8 +1,5 @@
 # Định nghĩa dự án VAULT
 
-<<<<<<< Updated upstream
-Cập nhật **2026-09-13**. Kịch bản ứng dụng lấy từ [VAULT_text/Work-flow.txt](../VAULT_text/Work-flow.txt) (15 bước). Planning này **không** tự cho phép viết code tính năng, commit hay đẩy remote.
-=======
 Cập nhật: **2026-10-08**.
 
 ## Quyết định phạm vi 2026-10-08
@@ -37,7 +34,6 @@ Route local chính:
 ```
 
 MVP này **không production-ready** và **không dùng dữ liệu thật**.
->>>>>>> Stashed changes
 
 ## Mục đích
 
@@ -74,15 +70,11 @@ Hai lõi dữ liệu đã có: **Hồ sơ doanh nghiệp (Trust Profile)** và *
 - **Mở lớp (người A):** Work-flow **1–8** — nhu cầu, L1, match, NDA, L2, Legal ×3, duyệt từng file L3.
 - **VDR & đóng (người B):** **9–15** — mở VDR, Tech DD, LOI, checklist, closed, phí, handoff; seed “L3 file đã duyệt”.
 
-<<<<<<< Updated upstream
-Nối bằng `closings.disclosure_id` là PR **sau**. Tab persona chỉ trên màn từng cụm.
-=======
 - Auth/RBAC/MFA và audit bảo mật production cho deal workspace.
 - Auth/RBAC/MFA thật.
 - VDR production, e-sign, watermark, antivirus/file scan.
 - Audit log production cho view/download/approve/revoke.
 - Real object storage hoặc provider VDR.
->>>>>>> Stashed changes
 
 **Trong scope**
 

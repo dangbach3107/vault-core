@@ -1,8 +1,5 @@
 # Hiện trạng VAULT
 
-<<<<<<< Updated upstream
-Cập nhật **2026-09-13**. Hai cụm **8 / 7** (Mở lớp 1–8 / VDR & đóng 9–15) — **chưa code**. Không commit/push.
-=======
 Cập nhật: **2026-10-08**.
 
 ## Cập nhật 2026-10-08 — P1 deal persistence
@@ -23,7 +20,6 @@ Cập nhật: **2026-10-08**.
 - Sửa kiến trúc theo phản hồi D-22: gỡ Controlled Access khỏi `InvestorMvp.tsx`; thêm module độc lập `#/access`, module hub `#/vault` theo role; đăng nhập và logo đi tới hub; Deal List mở chức năng deal thay vì A–Z. A–Z chỉ còn liên kết demo riêng.
 - Đính chính D-23: thay menu “Phân quyền” bằng `Disclosure approvals` (`#/disclosures`); navigation và route guard lọc theo role đăng nhập; backend giới hạn tạo lead/deal cho VAULT Admin. RBAC tài khoản và disclosure theo deal được tách thành hai khái niệm.
 - RBAC backend được siết thêm: Company read dành cho Seller/VAULT Admin/Legal, Company mutation cho Seller/VAULT Admin; Room read dành cho Seller/VAULT Admin/Legal/Tech DD, Room mutation cho Seller/VAULT Admin. Buyer chưa được vào local room cho tới khi room–deal grant được enforce đúng scope.
->>>>>>> Stashed changes
 
 ## Đã có trong code
 
@@ -37,9 +33,6 @@ Cập nhật: **2026-10-08**.
 
 ## Kiểm thử (lần ghi nhận 2026-09-11)
 
-<<<<<<< Updated upstream
-Python 36; Vitest 8 (sau sửa selector UI); Playwright 3 (chưa chạy lại sau polish UI). OpenAPI mới có health / companies / rooms.
-=======
 | Hạng mục | Trạng thái |
 | --- | --- |
 | Backend deal persistence cho A–Z flow | Đã có ở mức synthetic MVP; chưa có auth/audit production |
@@ -48,7 +41,6 @@ Python 36; Vitest 8 (sau sửa selector UI); Playwright 3 (chưa chạy lại sa
 | VDR production/object storage | Chưa có |
 | Watermark/audit/antivirus production-grade | Chưa có |
 | Real data readiness | Chưa đạt |
->>>>>>> Stashed changes
 
 ## Việc tiếp theo
 
