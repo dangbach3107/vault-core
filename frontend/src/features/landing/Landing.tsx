@@ -269,9 +269,18 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       </header>
 
       <section className="lp-hero">
-        <div className="lp-orb lp-orb-a" aria-hidden="true" />
-        <div className="lp-orb lp-orb-b" aria-hidden="true" />
-        <div className="lp-grid" aria-hidden="true" />
+        <div className="lp-hero-media" aria-hidden="true">
+          <video
+            className="lp-hero-video"
+            src="/hero.mp4"
+            poster="/hero-poster.jpg"
+            autoPlay={!reduceMotion()}
+            loop
+            muted
+            playsInline
+            preload="auto"
+          />
+        </div>
         <div className="lp-hero-inner">
           <div className="lp-hero-copy">
             <p className="lp-pill lp-rise" style={{ animationDelay: '0ms' }}>
@@ -304,54 +313,6 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             <p className="lp-note lp-rise" style={{ animationDelay: '340ms' }}>
               Bản demo nội bộ, chỉ dùng dữ liệu giả lập.
             </p>
-          </div>
-
-          <div className="lp-visual" aria-hidden="true">
-            <div className="lp-card lp-card-main">
-              <div className="lp-card-head">
-                <span className="lp-dots">
-                  <i />
-                  <i />
-                  <i />
-                </span>
-                <span>Phòng dữ liệu · Dự án Alpha</span>
-              </div>
-              {[
-                ['01 Pháp lý', '12 tài liệu', 'full'],
-                ['02 Tài chính', '8 tài liệu', 'part'],
-                ['03 Công nghệ', '5 tài liệu', 'part'],
-                ['04 Nhân sự', '3 tài liệu', 'lock'],
-              ].map(([name, count, state]) => (
-                <div className="lp-row" key={name}>
-                  <span className="lp-folder" />
-                  <span className="lp-row-name">{name}</span>
-                  <span className="lp-row-count">{count}</span>
-                  <span className={`lp-badge lp-badge-${state}`}>
-                    {state === 'lock'
-                      ? 'Khoá'
-                      : state === 'full'
-                        ? 'Đã mở'
-                        : 'Một phần'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="lp-card lp-card-float lp-float-a">
-              <p className="lp-mini-label">Trust Profile</p>
-              <strong>VAULT-0142</strong>
-              <div className="lp-chips">
-                <span className="is-on">L1</span>
-                <span className="is-on">L2</span>
-                <span>L3</span>
-              </div>
-            </div>
-            <div className="lp-card lp-card-float lp-float-b">
-              <p className="lp-mini-label">Quyền truy cập</p>
-              <strong>Hết hạn sau 30 ngày</strong>
-              <div className="lp-bar">
-                <span />
-              </div>
-            </div>
           </div>
         </div>
         <a
