@@ -92,6 +92,19 @@ def changed_verified_facts(old: dict, new: dict) -> bool:
     return False
 
 
+def verified_fact_changed(old, new) -> bool:
+    """True when a verified label is added or edited; only reviewers may do that."""
+    if isinstance(new, dict):
+        if "verification" in new:
+            return new["verification"] != "SELF_DECLARED" and old != new
+        old = old if isinstance(old, dict) else {}
+        return any(verified_fact_changed(old.get(key, {}), value) for key, value in new.items())
+    if isinstance(new, list):
+        old_years = {row["year"]: row for row in old} if isinstance(old, list) else {}
+        return any(verified_fact_changed(old_years.get(row["year"], {}), row) for row in new)
+    return False
+
+
 def preview(company: Company, layer: int):
     profile = CompanyInput.model_validate(company.profile)
     if layer == 1:

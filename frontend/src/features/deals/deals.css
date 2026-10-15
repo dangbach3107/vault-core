@@ -1,0 +1,221 @@
+/* Deal detail: role panels, step lists, finance and Tech DD forms. */
+.deal-detail {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.deal-detail > div,
+.deal-detail .panel {
+  min-width: 0;
+}
+.deal-detail-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+}
+.deal-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+.status-pill.sample {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.status-pill.active,
+.status-pill.approved,
+.status-pill.paid {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success);
+}
+.status-pill.expired,
+.status-pill.revoked,
+.status-pill.rejected,
+.status-pill.overdue {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.status-pill.partially_paid,
+.status-pill.pending {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+.deal-admin-actions {
+  justify-content: flex-end;
+}
+
+.deal-mine {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.deal-mine h3 {
+  margin: 0;
+}
+.deal-mine-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.deal-note-form {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.deal-step-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.deal-step {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.deal-step p {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+.deal-step-mark {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+}
+.deal-step.done .deal-step-mark {
+  border-color: var(--success);
+  background: var(--success);
+}
+.deal-step.ready .deal-step-mark {
+  border-color: var(--brand-700);
+  background: var(--brand-100);
+}
+.deal-step.stopped .deal-step-mark {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+.deal-step.blocked strong {
+  color: var(--text-2);
+}
+.deal-step-list.compact .deal-step {
+  padding: 6px 0;
+}
+
+.deal-doc-list,
+.grant-files {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.grant-files {
+  gap: 2px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.deal-doc-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.finding-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.finding-form .wide {
+  grid-column: 1 / -1;
+}
+.finding-list {
+  display: grid;
+  gap: 10px;
+}
+.access-item.finding.high,
+.access-item.finding.critical {
+  border-left: 4px solid var(--danger);
+}
+.access-item.fee.overdue {
+  border-left: 4px solid var(--danger);
+}
+.finding-update,
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.finding-update input,
+.inline-form input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.access-log ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.file-picker {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 400;
+}
+.check-row input {
+  width: auto;
+  margin-top: 3px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .finding-form {
+    grid-template-columns: 1fr;
+  }
+}

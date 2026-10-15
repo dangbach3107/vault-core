@@ -6,8 +6,8 @@ import CompanyDetail from './features/profiles/CompanyDetail'
 import RoomList from './features/rooms/RoomList'
 import RoomPage from './features/rooms/RoomPage'
 import DocumentPage from './features/rooms/DocumentPage'
-import InvestorMvp from './features/investor-mvp/InvestorMvp'
 import DealList from './features/deals/DealList'
+import DealDetail from './features/deals/DealDetail'
 import VaultHome from './features/vault/VaultHome'
 import AccessWorkspace from './features/access/AccessWorkspace'
 import Landing from './features/landing/Landing'
@@ -18,12 +18,7 @@ import NotFound from './components/NotFound'
 import RoleAvatar from './components/RoleAvatar'
 import { ROLE_META } from './features/auth/roles'
 import Login from './features/auth/Login'
-import {
-  hasConfiguredBackend,
-  getAuthSession,
-  setAuthSession,
-  type AuthSession,
-} from './api/config'
+import { getAuthSession, setAuthSession, type AuthSession } from './api/config'
 
 type Role = NonNullable<AuthSession>['user']['role']
 
@@ -78,7 +73,7 @@ const navigation: {
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD', 'FINANCE'],
   },
   {
-    label: 'Disclosure approvals',
+    label: 'Phê duyệt truy cập',
     href: '#/disclosures',
     icon: 'approvals',
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'],
@@ -99,7 +94,6 @@ const navigation: {
 
 const knownPaths = new Set([
   '/vault',
-  '/investor-mvp',
   '/access',
   '/disclosures',
   '/companies',
@@ -118,7 +112,7 @@ function isKnownRoute(path: string) {
 }
 
 function routeAllowed(path: string, role?: Role) {
-  if (!role || path === '/investor-mvp') return false
+  if (!role) return false
   if (path === '/vault') return true
   if (path === '/disclosures' || path === '/access')
     return ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'].includes(role)
@@ -129,26 +123,6 @@ function routeAllowed(path: string, role?: Role) {
   if (path === '/health') return role === 'VAULT_ADMIN'
   if (path === '/deals' || path.startsWith('/deals/')) return true
   return false
-}
-
-function isHostedWithoutBackend() {
-  return location.hostname.endsWith('vercel.app') && !hasConfiguredBackend()
-}
-
-function needsBackend(path: string) {
-  return (
-    path === '/companies' ||
-    path === '/companies/new' ||
-    path.startsWith('/companies/') ||
-    path === '/rooms' ||
-    path.startsWith('/rooms/') ||
-    path === '/deals' ||
-    path.startsWith('/deals/') ||
-    path === '/vault' ||
-    path === '/access' ||
-    path === '/disclosures' ||
-    path === '/health'
-  )
 }
 
 function navActive(path: string, href: string) {
@@ -162,9 +136,8 @@ function navActive(path: string, href: string) {
 
 function crumb(path: string) {
   if (path === '/vault') return [['Tổng quan', '']]
-  if (path === '/investor-mvp') return [['Investor MVP', '']]
   if (path === '/access' || path === '/disclosures')
-    return [['Disclosure approvals', '']]
+    return [['Phê duyệt truy cập', '']]
   if (path === '/deals') return [['Deals', '']]
   if (path.startsWith('/deals/'))
     return [
@@ -202,9 +175,7 @@ function crumb(path: string) {
 
 function titleOf(path: string) {
   if (path === '/vault') return 'Tổng quan'
-  if (path === '/investor-mvp') return 'Investor MVP'
-  if (path === '/access' || path === '/disclosures')
-    return 'Disclosure approvals'
+  if (path === '/access' || path === '/disclosures') return 'Phê duyệt truy cập'
   if (path === '/deals') return 'Deals'
   if (path.startsWith('/deals/')) return 'Chi tiết deal'
   if (path === '/companies/new') return 'Tạo hồ sơ'
@@ -217,32 +188,6 @@ function titleOf(path: string) {
   return 'Hồ sơ doanh nghiệp'
 }
 
-function BackendRequiredNotice({ target }: { target: string }) {
-  return (
-    <section className="panel backend-required">
-      <p className="eyebrow">Chưa kết nối máy chủ</p>
-      <h2>Màn này cần backend riêng</h2>
-      <p>
-        Link Vercel hiện chỉ deploy frontend để demo luồng A–Z. Các màn{' '}
-        <strong>Doanh nghiệp</strong>, <strong>Phòng dữ liệu</strong> và{' '}
-        <strong>Kết nối API</strong> cần FastAPI/PostgreSQL chạy riêng nên không
-        dùng trực tiếp trên Vercel-only deployment.
-      </p>
-      <p>
-        Để demo cho đồng nghiệp hoặc nhà đầu tư, hãy dùng màn{' '}
-        <strong>Investor MVP</strong>. Màn đó dùng dữ liệu giả lập và không cần
-        backend.
-      </p>
-      <div className="actions">
-        <a className="button-link" href="#/investor-mvp">
-          Mở Investor MVP
-        </a>
-        <span className="muted">Route vừa mở: {target}</span>
-      </div>
-    </section>
-  )
-}
-
 export default function Workspace() {
   const [session, setSession] = useState<AuthSession | null>(getAuthSession())
   const [hash, setHash] = useState(location.hash)
@@ -251,13 +196,10 @@ export default function Workspace() {
     addEventListener('hashchange', change)
     return () => removeEventListener('hashchange', change)
   }, [])
-  const hostedWithoutBackend = isHostedWithoutBackend()
-  const path =
-    pathOf(hash) ||
-    (hostedWithoutBackend ? '/investor-mvp' : session ? '/vault' : '/welcome')
+  const path = pathOf(hash) || (session ? '/vault' : '/welcome')
   const parts = path.split('/').filter(Boolean)
   const params = new URLSearchParams(hash.split('?')[1] || '')
-  if (path === '/health' && !hostedWithoutBackend)
+  if (path === '/health')
     return (
       <div className="health-shell">
         <App />
@@ -266,24 +208,17 @@ export default function Workspace() {
   if (path === '/welcome') return <Landing signedIn={Boolean(session)} />
   if (legalPaths[path]) return <LegalPage kind={legalPaths[path]} />
   let screen = <CompanyList />
-  if (hostedWithoutBackend && needsBackend(path))
-    screen = <BackendRequiredNotice target={path} />
-  else if (path === '/investor-mvp')
-    screen = <InvestorMvp role={session?.user.role} />
-  else if (path === '/vault' && session)
-    screen = <VaultHome user={session.user} />
-  else if (path === '/access' || path === '/disclosures')
+  if (path === '/vault' && session) screen = <VaultHome user={session.user} />
+  else if ((path === '/access' || path === '/disclosures') && session)
     screen = (
       <AccessWorkspace
-        role={session?.user.role}
+        role={session.user.role}
         initialDealId={params.get('deal') || undefined}
       />
     )
   else if (path === '/deals') screen = <DealList role={session?.user.role} />
-  else if (parts[0] === 'deals' && parts[1])
-    screen = (
-      <AccessWorkspace role={session?.user.role} initialDealId={parts[1]} />
-    )
+  else if (parts[0] === 'deals' && parts[1] && session)
+    screen = <DealDetail key={parts[1]} id={parts[1]} user={session.user} />
   else if (path === '/companies/new') screen = <CompanyForm />
   else if (path === '/rooms')
     screen = <RoomList companyId={params.get('company') || undefined} />
@@ -303,7 +238,7 @@ export default function Workspace() {
       )
   else if (path !== '/companies') screen = <NotFound />
   const crumbs = crumb(path)
-  if (!session && !hostedWithoutBackend) return <Login onLogin={setSession} />
+  if (!session) return <Login onLogin={setSession} />
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -398,9 +333,7 @@ export default function Workspace() {
           <h1>{isKnownRoute(path) ? titleOf(path) : 'Không tìm thấy trang'}</h1>
         </header>
         <div key={hash} className="workspace-content">
-          {hostedWithoutBackend ? (
-            screen
-          ) : session && !isKnownRoute(path) ? (
+          {session && !isKnownRoute(path) ? (
             <NotFound />
           ) : session && routeAllowed(path, session.user.role) ? (
             screen

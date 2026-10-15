@@ -1,6 +1,19 @@
 # Hiện trạng VAULT
 
-Cập nhật: **2026-10-08**.
+Cập nhật: **2026-10-15**.
+
+## Cập nhật 2026-10-15 — sửa theo góp ý GUI/Tech 14/10
+
+- Phạm vi có phiên bản: [SCOPE_BASELINE.md](SCOPE_BASELINE.md) v1.0.
+- Gỡ Investor MVP (`#/investor-mvp`, fallback Vercel). Thẻ deal mở `#/deals/<id>` với phần việc theo vai trò.
+- Deal có Buyer phụ trách; API chiếu dữ liệu tối thiểu theo vai trò; thao tác của Buyer/Seller kiểm tra đúng bên của deal.
+- Quyền tài liệu theo file + phiên bản + căn cứ + xem/tải + hạn + thu hồi; Buyer đọc file qua deal; Teaser cần Seller duyệt; NDA/LOI chỉ là điều kiện.
+- Tech DD: finding tách khỏi ký xác nhận. Finance: phí → hóa đơn → thanh toán, trạng thái quá hạn/một phần. Tách Ký và Đóng (`spaSigned`, `dealClosed`).
+- Seller không tự gắn nhãn xác minh. Bỏ số xác minh giả (12/15), bỏ tuyên bố K-Anonymity/NĐ13, Lớp 3 = "Tài liệu hạn chế theo quyền", sửa câu xem trước Office.
+- Định dạng tiền VND bằng chuỗi/BigInt; sửa tràn ngang mobile (390/768px), lịch sử phiên bản xuống dòng, hộp thoại có Esc/giữ focus.
+- Xác minh: 55 test Python, 22 test frontend, 6 test Chromium (gồm kiểm tra không tràn ngang 390/768px), tsc, eslint, OpenAPI.
+- Migration dữ liệu `0006` chỉnh deal cũ khi deploy: gán Buyer phụ trách (ưu tiên người đã gửi yêu cầu truy cập), deal hoàn tất bằng nút mẫu cũ được dựng lại thành dữ liệu minh họa có Ký/Đóng khớp nhau; deal khác giữ tiến độ. Trên production: Aurora → `buyer2` (minh họa), Bamboo → `buyer`.
+
 
 ## Cập nhật 2026-10-08 — P1 deal persistence
 

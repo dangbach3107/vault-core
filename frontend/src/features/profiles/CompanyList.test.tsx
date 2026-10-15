@@ -57,10 +57,7 @@ test('renders buyer discovery mode with deal cards and filters by sector', async
   expect(screen.queryByText('Công ty Cổ phần Công nghệ ABC')).toBeNull()
 
   // Filter by sector: SOFTWARE
-  await user.selectOptions(
-    screen.getByLabelText('Ngành mục tiêu (Field/Sector)'),
-    'SOFTWARE',
-  )
+  await user.selectOptions(screen.getByLabelText('Ngành'), 'SOFTWARE')
   expect(screen.getByText('VAULT-TEST001')).toBeVisible()
   expect(screen.queryByText('VAULT-TEST002')).toBeNull()
 
@@ -68,8 +65,38 @@ test('renders buyer discovery mode with deal cards and filters by sector', async
   await user.click(screen.getByRole('button', { name: /Đặt lại bộ lọc/ }))
   expect(screen.getByText('VAULT-TEST002')).toBeVisible()
 
+  // Counts are real: no placeholder numbers
+  expect(
+    screen.getByText(/14\/15 dữ kiện đã được người duyệt xác minh/),
+  ).toBeVisible()
+
   // Switch to Admin mode
-  await user.click(screen.getByRole('button', { name: /Chế độ Quản trị viên/ }))
+  await user.click(screen.getByRole('button', { name: /Danh sách quản trị/ }))
   expect(screen.getByText('Công ty Cổ phần Công nghệ ABC')).toBeVisible()
   expect(screen.getByText(/0101234567/)).toBeVisible()
+})
+
+test('zero verified facts stays zero', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify([
+            {
+              ...mockCompanies[0],
+              verified_facts_count: 0,
+              total_facts_count: 20,
+            },
+          ]),
+          { headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+  )
+  render(<CompanyList />)
+  expect(
+    await screen.findByText('Chưa có dữ kiện được xác minh (0/20)'),
+  ).toBeVisible()
+  expect(screen.queryByText(/12\//)).toBeNull()
 })

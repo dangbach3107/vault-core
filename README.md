@@ -153,9 +153,16 @@ Kết quả đã xác minh: **36 kiểm tra Python đạt**, **8 kiểm tra giao
 
 ### Deal Workspace MVP có lưu dữ liệu
 
-Route `#/investor-mvp` dùng API `/api/v1/deals` để tạo/tải một thương vụ synthetic và lưu các action qua PostgreSQL. Backend áp dụng gate cho L1/L2/NDA/L3, Indicative LOI trước VDR, Tech DD trước Definitive Offer, legal checklist trước closing, rồi mới ghi success fee/handoff. Nút reset và hoàn tất mẫu cũng cập nhật record backend. Chạy migration `0003` trước khi dùng; đây vẫn là MVP giả lập, chưa thay thế auth, audit bảo mật, e-sign, scanner hoặc VDR production.
+Trang `#/deals/<id>` là nơi làm việc theo deal; mỗi vai trò mở deal ở phần việc của mình trước. Admin tạo deal, chọn hồ sơ seller và Buyer phụ trách; Buyer khác không thấy deal đó. API trả dữ liệu tối thiểu theo vai trò: Admin/Legal xem đủ; Buyer chỉ thấy tiến độ chung và yêu cầu/quyền/đề nghị của mình; Seller thấy deal của doanh nghiệp mình (không có phí); Tech DD thấy phòng dữ liệu và finding; Finance thấy phí và trạng thái ký/đóng.
 
-MVP có sáu tài khoản role: `buyer`, `seller`, `admin`, `legal`, `tech`, `finance`. Mật khẩu local mặc định là `vault-demo`; đổi bằng `DEMO_ROLE_PASSWORD` và đặt `DEMO_AUTH_SECRET` riêng khi chạy hosted demo. Token có hạn 8 giờ, mọi API có database yêu cầu đăng nhập và từng action chỉ chấp nhận đúng role. Cơ chế này dành cho synthetic MVP, không phải Rikkei SSO/MFA production.
+- Quyền truy cập theo người, deal, lớp, từng file và phiên bản, căn cứ (Seller duyệt Teaser / NDA / LOI), quyền xem hoặc tải, thời hạn, thu hồi. NDA hay LOI chỉ là điều kiện, không tự mở lớp. Buyer đọc file qua `/deals/<id>/documents`, đúng phiên bản đã duyệt; mỗi lần xem/tải được ghi nhật ký.
+- Tech DD: ghi finding, Seller phản hồi, chỉ Tech DD đóng/chấp nhận rủi ro; ký xác nhận là bước riêng, bị chặn khi còn finding mở.
+- Finance: khoản phí → hóa đơn → từng lần thanh toán; trạng thái `DRAFT`/`INVOICED`/`PARTIALLY_PAID`/`PAID`/`OVERDUE`. Phí thành công chỉ lập sau Closing. Build to Buy là cơ hội, không phải doanh thu.
+- Ký hợp đồng (`spaSigned`) và đóng giao dịch (`dealClosed`) là hai bước riêng.
+- Nút "Nạp dữ liệu minh họa" (Admin) gắn cờ `is_sample`; giao diện hiện nhãn "Dữ liệu minh họa". Không dùng nó làm bằng chứng nghiệm thu.
+- Seller chỉ lưu dữ kiện tự khai; nhãn đã xác minh do người duyệt (Admin) gắn.
+
+Tài khoản: `buyer`, `buyer2`, `seller`, `seller2`, `admin`, `legal`, `tech`, `finance`. Mật khẩu local mặc định là `vault-demo`; đổi bằng `DEMO_ROLE_PASSWORD` và đặt `DEMO_AUTH_SECRET` riêng khi chạy hosted demo. Token có hạn 8 giờ. Cơ chế này dành cho synthetic MVP, không phải SSO/MFA production. Phạm vi đã/chưa làm: [.planning/SCOPE_BASELINE.md](.planning/SCOPE_BASELINE.md).
 
 Backend là nguồn định nghĩa hợp đồng; frontend dùng types sinh tự động từ cùng OpenAPI:
 

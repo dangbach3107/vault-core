@@ -14,7 +14,7 @@ const features = [
   {
     icon: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
     title: 'Phòng dữ liệu theo thương vụ',
-    text: 'Thư mục chuẩn, nhiều phiên bản tài liệu, xem trước PDF, Office và ảnh ngay trên trình duyệt.',
+    text: 'Thư mục chuẩn, nhiều phiên bản tài liệu; xem trước PDF và ảnh trên trình duyệt, file Word/Excel tải về để mở.',
   },
   {
     icon: 'M3 7h18M3 7v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7M3 7l2-3h14l2 3M9 11h6',
@@ -57,7 +57,8 @@ const layers = [
   {
     key: 'L2',
     name: 'Lớp 2 · Định danh',
-    summary: 'Sau khi ký NDA, buyer biết danh tính và số liệu chi tiết hơn.',
+    summary:
+      'Có NDA và được Seller/Legal duyệt, buyer mới biết danh tính và số liệu chi tiết hơn.',
     points: [
       'Tên pháp lý và mã số thuế',
       'Số liệu tài chính từng năm',
@@ -71,7 +72,7 @@ const layers = [
   },
   {
     key: 'L3',
-    name: 'Lớp 3 · Đầy đủ',
+    name: 'Lớp 3 · Tài liệu hạn chế theo quyền',
     summary: 'Chỉ người được duyệt mới mở được thông tin nhạy cảm.',
     points: [
       'Cơ cấu cổ đông và người ra quyết định',
@@ -88,11 +89,17 @@ const layers = [
 
 const steps = [
   ['Yêu cầu', 'Buyer gửi nhu cầu và khẩu vị đầu tư.'],
-  ['Kết nối', 'Hệ thống gợi ý hồ sơ phù hợp theo lớp 1.'],
-  ['NDA', 'Ký thoả thuận để mở lớp 2.'],
+  [
+    'Kết nối',
+    'VAULT chọn hồ sơ phù hợp; buyer xem Teaser lớp 1 khi Seller đã duyệt.',
+  ],
+  ['NDA', 'Ký thoả thuận bảo mật; lớp 2 chỉ mở khi được duyệt.'],
   ['Phòng dữ liệu', 'Seller mở tài liệu theo quyền được duyệt.'],
   ['Thẩm định', 'Tech DD và Legal rà soát, ký duyệt.'],
-  ['Closing', 'Chốt thương vụ, ghi nhận phí và bàn giao.'],
+  [
+    'Ký & đóng',
+    'Ký hợp đồng, hoàn tất điều kiện đóng, theo dõi phí và bàn giao.',
+  ],
 ]
 
 const roles = [
@@ -107,7 +114,7 @@ const roles = [
 const stats: [number, string, string][] = [
   [3, '', 'lớp tiết lộ thông tin'],
   [6, '', 'vai trò phân quyền'],
-  [15, '', 'bước từ yêu cầu đến closing'],
+  [20, '', 'bước quy trình thương vụ'],
   [10, ' MB', 'tối đa cho mỗi tài liệu tải lên'],
 ]
 
@@ -409,9 +416,9 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               <span className="lp-gradient-text">an toàn từng lớp.</span>
             </h1>
             <p className="lp-lead lp-rise" style={{ animationDelay: '180ms' }}>
-              VAULT kết nối buyer và seller bằng hồ sơ doanh nghiệp đã xác minh,
-              phòng dữ liệu có kiểm soát và một luồng thương vụ rõ ràng từ đầu
-              đến cuối.
+              VAULT kết nối buyer và seller bằng hồ sơ doanh nghiệp có nhãn xác
+              minh theo từng dữ kiện, phòng dữ liệu có kiểm soát và một luồng
+              thương vụ rõ ràng từ đầu đến cuối.
             </p>
             <div className="lp-cta lp-rise" style={{ animationDelay: '270ms' }}>
               <a className="lp-btn lp-btn-primary" href={TRY_HREF}>
@@ -578,6 +585,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         <Reveal className="lp-head">
           <p className="lp-eyebrow">Quy trình</p>
           <h2>Từ yêu cầu đến closing, từng bước có dấu vết.</h2>
+          <p className="lp-scope-note">
+            Phạm vi hiện tại: mua bán, chuyển nhượng doanh nghiệp (M&A). Luồng
+            gọi vốn (giai đoạn 2: vòng gọi vốn, bảng cơ cấu cổ đông) chưa triển
+            khai.
+          </p>
         </Reveal>
         <ol className="lp-steps" ref={stepsRef}>
           <span className="lp-steps-line" aria-hidden="true">
