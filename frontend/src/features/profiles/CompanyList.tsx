@@ -93,11 +93,10 @@ export default function CompanyList() {
     <section>
       <div className="page-heading">
         <div>
-          <p className="eyebrow">01 / TRUST PROFILE & DISCOVERY</p>
-          <h1>Sàn giao dịch M&A & Hồ sơ mục tiêu</h1>
+          <p className="eyebrow">Hồ sơ doanh nghiệp</p>
+          <h1>Danh mục hồ sơ seller</h1>
           <p className="muted">
-            Khám phá doanh nghiệp theo khẩu vị đầu tư, đối chiếu dữ kiện 3 lớp
-            bảo mật.
+            Quản lý hồ sơ và xem trước cách hồ sơ hiển thị ở từng lớp công bố.
           </p>
         </div>
         <a className="button-link" href="#/companies/new">
@@ -116,7 +115,7 @@ export default function CompanyList() {
               setPage(0)
             }}
           >
-            💼 Chế độ Nhà đầu tư (Teaser Lớp 1)
+            Xem trước dạng Teaser (Lớp 1)
           </button>
           <button
             type="button"
@@ -126,7 +125,7 @@ export default function CompanyList() {
               setPage(0)
             }}
           >
-            🔐 Chế độ Quản trị viên (Lớp 2 - Danh tính)
+            Danh sách quản trị (có danh tính)
           </button>
         </div>
         <span className="muted" style={{ fontSize: '13px' }}>
@@ -135,13 +134,12 @@ export default function CompanyList() {
         </span>
       </div>
 
-      {/* Layer 1 Double Check & Privacy Notice Callout */}
       <div className="doublecheck-callout">
-        <strong>🛡️ Cơ chế Double-Check Lớp 1 (Teaser ẩn danh):</strong> Dải
-        doanh thu & nhân sự được sinh tự động (Deterministic rule-based) từ Fact
-        Lớp 2 đã đối chiếu chứng từ kiểm toán/thuế. Dữ kiện định danh (Tên thật,
-        MST, Nguồn) được bảo mật nghiêm ngặt theo chuẩn K-Anonymity & Nghị định
-        13/2023/NĐ-CP để ngăn ngừa đối thủ khai thác trước khi ký NDA.
+        <strong>Đây là bản xem trước nội bộ.</strong> Dải doanh thu và nhân sự
+        được tính theo quy tắc cố định từ dữ kiện đã nhập; dữ kiện đang mâu
+        thuẫn hoặc hết hạn bị ẩn. Buyer chỉ thấy Teaser trong trang deal của họ,
+        sau khi Seller duyệt. Teaser vẫn cần người duyệt kiểm tra nguy cơ nhận
+        diện trước khi chia sẻ.
       </div>
 
       {/* Faceted Filter Panel (Investment Mandate) */}
@@ -154,7 +152,7 @@ export default function CompanyList() {
           }}
         >
           <strong style={{ fontSize: '14px', color: 'var(--text)' }}>
-            🎯 Bộ lọc theo Khẩu vị đầu tư (Investment Mandate)
+            Bộ lọc theo khẩu vị đầu tư
           </strong>
           {hasActiveFilters && (
             <button
@@ -163,14 +161,14 @@ export default function CompanyList() {
               style={{ fontSize: '12px', padding: '4px 10px' }}
               onClick={resetFilters}
             >
-              Đặt lại bộ lọc (Reset)
+              Đặt lại bộ lọc
             </button>
           )}
         </div>
 
         <div className="filter-controls-grid">
           <div>
-            <label htmlFor="filter-sector">Ngành mục tiêu (Field/Sector)</label>
+            <label htmlFor="filter-sector">Ngành</label>
             <select
               id="filter-sector"
               value={sector}
@@ -180,15 +178,17 @@ export default function CompanyList() {
               }}
             >
               <option value="">Tất cả các ngành</option>
-              <option value="SOFTWARE">💻 Phần mềm & Công nghệ</option>
-              <option value="MANUFACTURING">🏭 Sản xuất & Cơ khí</option>
-              <option value="SERVICES">🚚 Logistics & Dịch vụ</option>
-              <option value="OTHER">⚡ Năng lượng & Khác</option>
+              <option value="SOFTWARE">{optionLabels.SOFTWARE}</option>
+              <option value="MANUFACTURING">
+                {optionLabels.MANUFACTURING}
+              </option>
+              <option value="SERVICES">{optionLabels.SERVICES}</option>
+              <option value="OTHER">{optionLabels.OTHER}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="filter-region">Khu vực (Region)</label>
+            <label htmlFor="filter-region">Khu vực</label>
             <select
               id="filter-region"
               value={region}
@@ -205,7 +205,7 @@ export default function CompanyList() {
           </div>
 
           <div>
-            <label htmlFor="filter-revenue">Dải doanh thu (Revenue)</label>
+            <label htmlFor="filter-revenue">Dải doanh thu</label>
             <select
               id="filter-revenue"
               value={revenueBand}
@@ -270,7 +270,7 @@ export default function CompanyList() {
               fontWeight: 600,
             }}
           >
-            Tìm thấy {filtered.length} cơ hội đầu tư phù hợp khẩu vị
+            Tìm thấy {filtered.length} hồ sơ
           </span>
           <span className="muted" style={{ fontSize: '12px' }}>
             Trang {page + 1} / {totalPages || 1}
@@ -299,11 +299,11 @@ export default function CompanyList() {
                 <div className="deal-card-header">
                   <span className="deal-alias">{item.alias}</span>
                   <span className="deal-sector-badge">
-                    {optionLabels[item.sector || ''] || 'Đa ngành'}
+                    {optionLabels[item.sector || ''] || 'Chưa có ngành'}
                   </span>
                 </div>
                 <div className="deal-region-pill">
-                  📍 {optionLabels[item.region || ''] || 'Việt Nam'}
+                  {optionLabels[item.region || ''] || 'Chưa có khu vực'}
                 </div>
 
                 <div className="deal-metrics-table">
@@ -312,19 +312,19 @@ export default function CompanyList() {
                       Doanh thu năm gần nhất
                     </span>
                     <span className="metric-box-value">
-                      {item.revenue_band || 'Đang cập nhật'}
+                      {item.revenue_band || 'Chưa có'}
                     </span>
                   </div>
                   <div className="metric-box-item">
                     <span className="metric-box-label">Quy mô nhân sự</span>
                     <span className="metric-box-value">
-                      {item.employee_band || 'Đang cập nhật'}
+                      {item.employee_band || 'Chưa có'}
                     </span>
                   </div>
                   <div className="metric-box-item">
                     <span className="metric-box-label">Cấu trúc thương vụ</span>
                     <span className="metric-box-value">
-                      {optionLabels[item.deal_type || ''] || 'Thỏa thuận'}
+                      {optionLabels[item.deal_type || ''] || 'Chưa có'}
                     </span>
                   </div>
                   <div className="metric-box-item">
@@ -332,34 +332,25 @@ export default function CompanyList() {
                     <span className="metric-box-value">
                       {item.stake_percent != null
                         ? `${item.stake_percent}%`
-                        : 'Thương lượng'}
+                        : 'Chưa có'}
                     </span>
                   </div>
                 </div>
 
                 <div className="deal-trust-status">
                   <span className="dot" />
+                  {/* Real counts only: 0 stays 0, never a placeholder. */}
                   <span>
-                    Đã đối chiếu chứng từ ({item.verified_facts_count || 12}/
-                    {item.total_facts_count || 15} dữ kiện)
+                    {(item.verified_facts_count ?? 0) > 0
+                      ? `${item.verified_facts_count}/${item.total_facts_count ?? 0} dữ kiện đã được người duyệt xác minh`
+                      : `Chưa có dữ kiện được xác minh (0/${item.total_facts_count ?? 0})`}
                   </span>
                 </div>
               </div>
 
               <div className="deal-action-buttons">
-                <a
-                  className="deal-btn-primary"
-                  href={`#/companies/${item.id}`}
-                  title="Xem bản Teaser Lớp 1"
-                >
-                  Xem Teaser Lớp 1 →
-                </a>
-                <a
-                  className="deal-btn-secondary"
-                  href={`#/companies/${item.id}`}
-                  title="Gửi đề nghị tiếp cận sau khi ký NDA"
-                >
-                  Ký NDA mở Lớp 2
+                <a className="deal-btn-primary" href={`#/companies/${item.id}`}>
+                  Mở hồ sơ và xem trước các lớp →
                 </a>
               </div>
             </div>
@@ -382,7 +373,7 @@ export default function CompanyList() {
                   {optionLabels[row.sector || ''] || 'Chưa đặt'} · Vùng:{' '}
                   {optionLabels[row.region || ''] || 'Chưa đặt'} · Xác minh:{' '}
                   <span className="badge DOCUMENT_VERIFIED">
-                    {row.verified_facts_count || 0}/{row.total_facts_count || 0}{' '}
+                    {row.verified_facts_count ?? 0}/{row.total_facts_count ?? 0}{' '}
                     dữ kiện
                   </span>
                 </p>

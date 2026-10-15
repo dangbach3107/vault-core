@@ -70,7 +70,7 @@ test('room folders, upload, preview and immutable version history', async ({
   await expect
     .poll(() =>
       page
-        .getByRole('img')
+        .getByRole('img', { name: /Xem trước/ })
         .evaluate((image) => (image as HTMLImageElement).naturalWidth),
     )
     .toBe(800)

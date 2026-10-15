@@ -3,7 +3,7 @@
  *
  * Layers, in order: tokens → base → app shell → components → screens → responsive.
  * Components read semantic tokens only; raw colours live in :root.
- * Legacy A–Z demo rules live in features/investor-mvp/investor-mvp.css.
+ * Deal detail panels have their own sheet: features/deals/deals.css.
  */
 
 /* ---------- Tokens ---------- */
@@ -1211,6 +1211,18 @@ form > .form-section + .error-box {
   white-space: normal;
   box-shadow: none;
 }
+/* Version entries stack their date/file/note so long names wrap inside the column. */
+.version-list button {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.version-list button span {
+  max-width: 100%;
+  font-size: 12px;
+}
 .folder-list button:hover:not(:disabled),
 .version-list button:hover:not(:disabled) {
   border-color: transparent;
@@ -1429,9 +1441,11 @@ form > .form-section + .error-box {
     --gutter: 16px;
   }
   .app-frame {
-    grid-template-columns: 1fr;
+    /* minmax(0, …): the scrolling nav must not widen the page past the viewport */
+    grid-template-columns: minmax(0, 1fr);
   }
   .sidebar {
+    min-width: 0;
     position: static;
     flex-direction: row;
     flex-wrap: wrap;
@@ -1446,6 +1460,7 @@ form > .form-section + .error-box {
     display: flex;
     order: 3;
     width: 100%;
+    min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
   }

@@ -33,6 +33,18 @@ const accounts = [
   },
   { id: 'tech', name: 'Tech DD', text: 'Thẩm định kỹ thuật', role: 'TECH_DD' },
   { id: 'finance', name: 'Finance', text: 'Phí và chứng từ', role: 'FINANCE' },
+  {
+    id: 'buyer2',
+    name: 'Buyer 2',
+    text: 'Buyer khác, deal riêng',
+    role: 'BUYER',
+  },
+  {
+    id: 'seller2',
+    name: 'Seller 2',
+    text: 'Seller khác, hồ sơ riêng',
+    role: 'SELLER',
+  },
 ] as const
 
 const points = [

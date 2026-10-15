@@ -15,94 +15,101 @@ const roleModules: Record<
 > = {
   BUYER: [
     {
-      title: 'Buyer Thesis & Requests',
-      description: 'Quản lý nhu cầu mua và các deal đang quan tâm.',
+      title: 'Deal của tôi',
+      description: 'Gửi nhu cầu mua, xem Teaser, LOI và tài liệu được duyệt.',
       href: '#/deals',
     },
     {
-      title: 'Yêu cầu disclosure',
-      description: 'Gửi và theo dõi request L1/L2/L3/Closing theo mục đích.',
+      title: 'Yêu cầu truy cập',
+      description: 'Xin mở Lớp 2, Lớp 3 hoặc tài liệu closing theo mục đích.',
       href: '#/disclosures',
     },
   ],
   SELLER: [
     {
-      title: 'Hồ sơ Seller',
-      description: 'Pháp nhân, ownership, readiness và Trust Profile.',
+      title: 'Hồ sơ doanh nghiệp',
+      description: 'Pháp nhân, sở hữu, dữ kiện tự khai và nhãn xác minh.',
       href: '#/companies',
     },
     {
-      title: 'Phê duyệt disclosure',
-      description: 'Duyệt buyer, scope, thời hạn và thu hồi quyền.',
+      title: 'Phê duyệt truy cập',
+      description: 'Duyệt buyer, file, phiên bản, thời hạn và thu hồi quyền.',
       href: '#/disclosures',
     },
     {
-      title: 'Tài liệu & Data Room',
-      description: 'Quản lý tài liệu và phiên bản theo thương vụ.',
+      title: 'Deal của doanh nghiệp',
+      description: 'Theo dõi tiến độ và phản hồi finding Tech DD.',
+      href: '#/deals',
+    },
+    {
+      title: 'Phòng dữ liệu',
+      description: 'Quản lý tài liệu và phiên bản.',
       href: '#/rooms',
     },
   ],
   VAULT_ADMIN: [
     {
-      title: 'Lead & Deal',
-      description: 'Tạo, chọn và điều phối hồ sơ thương vụ.',
+      title: 'Lead & deal',
+      description: 'Tạo deal, gán buyer và seller, điều phối các bước.',
       href: '#/deals',
     },
     {
-      title: 'Disclosure approvals',
-      description: 'Theo dõi request, approval, expiry và revoke.',
+      title: 'Phê duyệt truy cập',
+      description: 'Theo dõi yêu cầu, quyền, hết hạn và thu hồi.',
       href: '#/disclosures',
     },
     {
-      title: 'Doanh nghiệp & Trust Profile',
-      description: 'Quản lý hồ sơ seller/buyer đã xác minh.',
+      title: 'Hồ sơ doanh nghiệp',
+      description: 'Rà soát chứng từ và gắn nhãn xác minh cho từng dữ kiện.',
       href: '#/companies',
     },
     {
       title: 'Phòng dữ liệu',
-      description: 'Tạo phòng, upload, version và xóa tài liệu.',
+      description: 'Tạo phòng, tải lên, quản lý phiên bản và xóa tài liệu.',
       href: '#/rooms',
     },
   ],
   LEGAL: [
     {
-      title: 'Legal & Eligibility',
-      description: 'Kiểm tra pháp lý, NDA, authority và Gate 0.',
+      title: 'Pháp lý theo deal',
+      description: 'NDA, điều kiện tham gia, ký hợp đồng và điều kiện đóng.',
       href: '#/deals',
     },
     {
-      title: 'Disclosure Approval',
-      description: 'Duyệt L1/L2/L3/Closing và cross-border scope.',
+      title: 'Phê duyệt truy cập',
+      description:
+        'Duyệt Lớp 1/2/3, tài liệu closing và chuyển dữ liệu ra nước ngoài.',
       href: '#/disclosures',
     },
     {
-      title: 'Closing Room',
-      description: 'Theo dõi tài liệu closing hạn chế.',
+      title: 'Phòng dữ liệu',
+      description: 'Xem tài liệu pháp lý và tài liệu closing.',
       href: '#/rooms',
     },
   ],
   TECH_DD: [
     {
-      title: 'Tech DD',
-      description: 'Findings, remediation, impact và sign-off.',
+      title: 'Thẩm định kỹ thuật',
+      description: 'Ghi nhận finding, theo dõi xử lý, ký xác nhận kết thúc.',
       href: '#/deals',
     },
     {
-      title: 'DD Data Room',
-      description: 'Tài liệu kỹ thuật được cấp theo scope.',
+      title: 'Phòng dữ liệu',
+      description: 'Tài liệu kỹ thuật của seller.',
       href: '#/rooms',
     },
   ],
   FINANCE: [
     {
-      title: 'Fee Management',
-      description: 'Prep fee, success fee, Tech DD và Build-to-Buy.',
+      title: 'Phí và thanh toán',
+      description:
+        'Lập phí, xuất hóa đơn, ghi nhận thanh toán, theo dõi quá hạn.',
       href: '#/deals',
     },
     {
-      title: 'Closing Evidence',
-      description: 'Theo dõi chứng từ được cấp quyền.',
-      href: '#/rooms',
+      title: 'Trạng thái ký & đóng',
+      description: 'Xem deal đã ký, đã đóng để lập phí thành công đúng lúc.',
+      href: '#/deals',
     },
   ],
 }
@@ -114,7 +121,7 @@ export default function VaultHome({ user }: { user: AuthUser }) {
         <span className="hero-avatar">
           <RoleAvatar role={user.role} size={76} />
         </span>
-        <p className="eyebrow">VAULT operating system</p>
+        <p className="eyebrow">Không gian làm việc</p>
         <h2>Không gian làm việc của {user.display_name}</h2>
         <p className="hero-sub">
           Các chức năng được sắp xếp theo đúng trách nhiệm của vai trò “

@@ -176,6 +176,25 @@ def test_verification_lineage_and_conflicted_projection(client):
     assert client.put(path, json=update).status_code == 422
 
 
+def test_only_reviewer_marks_facts_verified(client):
+    seller = auth_headers(client, "seller")
+    evidence = {"verification": "DOCUMENT_VERIFIED", "source": "Giấy phép mẫu", "source_date": "2025-01-01", "reviewed_by": "seller", "reviewed_on": "2025-02-01"}
+    body = draft()
+    body["company_name"] |= evidence
+    assert client.post("/api/v1/companies", json=body, headers=seller).status_code == 403
+    company = client.post("/api/v1/companies", json=draft(), headers=seller).json()
+    path = f'/api/v1/companies/{company["id"]}'
+    update = {"expected_revision": 1, "profile": deepcopy(company["profile"])}
+    update["profile"]["company_name"] |= evidence
+    assert client.put(path, json=update, headers=seller).status_code == 403
+    reviewed = client.put(path, json=update)  # the default client is VAULT Admin, the reviewer
+    assert reviewed.status_code == 200
+    # The seller may still save other self-declared edits without touching the reviewed fact.
+    again = {"expected_revision": 2, "profile": deepcopy(reviewed.json()["profile"])}
+    again["profile"]["employees"]["value"] = 12
+    assert client.put(path, json=again, headers=seller).status_code == 200
+
+
 def test_disabled_preview_does_not_enable_business_routes():
     with TestClient(create_app(Settings(_env_file=None, internal_preview_enabled=False, database_url=""))) as api:
         assert api.get("/api/v1/health").status_code == 200

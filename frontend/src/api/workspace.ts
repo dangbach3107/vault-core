@@ -89,7 +89,7 @@ export async function request<T>(
   const contentType = response.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
     throw new Error(
-      'Màn này cần backend API đang chạy. Bản Vercel hiện chỉ dùng để demo Investor MVP bằng dữ liệu giả lập.',
+      'Máy chủ trả về dữ liệu không đúng định dạng. Kiểm tra backend API rồi thử lại.',
     )
   }
   return response.json() as Promise<T>

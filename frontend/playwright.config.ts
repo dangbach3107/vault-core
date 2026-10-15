@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 const testDatabaseUrl =
   process.env.TEST_DATABASE_URL ||
@@ -17,6 +17,14 @@ process.env.PLAYWRIGHT_BROWSERS_PATH = fileURLToPath(
   new URL('../.tmp/playwright', import.meta.url),
 )
 
+// Windows uses the repo .venv; macOS/Linux fall back to python3 when no .venv exists.
+const windows = process.platform === 'win32'
+const venvPython = windows
+  ? '..\\.venv\\Scripts\\python.exe'
+  : '../.venv/bin/python'
+const python = windows || existsSync(venvPython) ? venvPython : 'python3'
+const npm = windows ? 'npm.cmd' : 'npm'
+
 export default defineConfig({
   globalSetup: './tests/e2e/setup.ts',
   testDir: './tests/e2e',
@@ -25,8 +33,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command:
-        '..\\.venv\\Scripts\\python.exe -m uvicorn backend.app.main:app --app-dir .. --host 127.0.0.1 --port 18000',
+      command: `${python} -m uvicorn backend.app.main:app --app-dir .. --host 127.0.0.1 --port 18000`,
       url: 'http://127.0.0.1:18000/api/v1/health',
       reuseExistingServer: false,
       timeout: 30000,
@@ -37,7 +44,7 @@ export default defineConfig({
       },
     },
     {
-      command: 'npm.cmd run dev -- --port 15173',
+      command: `${npm} run dev -- --port 15173`,
       url: 'http://127.0.0.1:15173',
       reuseExistingServer: false,
       timeout: 30000,

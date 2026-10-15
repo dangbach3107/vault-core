@@ -1,11 +1,19 @@
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 export default function setup() {
   const root = fileURLToPath(new URL('../../../', import.meta.url))
-  const python = fileURLToPath(
-    new URL('../../../.venv/Scripts/python.exe', import.meta.url),
+  const venv = fileURLToPath(
+    new URL(
+      process.platform === 'win32'
+        ? '../../../.venv/Scripts/python.exe'
+        : '../../../.venv/bin/python',
+      import.meta.url,
+    ),
   )
+  const python =
+    process.platform === 'win32' || existsSync(venv) ? venv : 'python3'
   try {
     for (const module of ['backend.testing', 'backend.preview_fixtures']) {
       execFileSync(python, ['-m', module], {

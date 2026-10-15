@@ -602,6 +602,12 @@ html {
   letter-spacing: -0.015em;
 }
 
+.lp-scope-note {
+  margin: 16px 0 0;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
 .lp-feature-grid,
 .lp-role-grid {
   display: grid;

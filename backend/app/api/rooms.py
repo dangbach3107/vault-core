@@ -180,6 +180,11 @@ def get_content(room_id: UUID, document_id: UUID, number: Annotated[int, Path(ge
     version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == document.id, DocumentVersion.number == number))
     if version is None:
         raise HTTPException(404, "Không tìm thấy phiên bản.")
+    return version_file(request, session, version, inline=not download)
+
+
+def version_file(request, session, version: DocumentVersion, inline: bool) -> Response:
+    """Return one immutable version; Office files are always sent as attachments."""
     blob = session.get(DocumentBlob, version.storage_key)
     data = blob.content if blob is not None else None
     if data is None:  # legacy file written to disk before uploads moved into PostgreSQL
@@ -192,7 +197,7 @@ def get_content(room_id: UUID, document_id: UUID, number: Annotated[int, Path(ge
         raise HTTPException(503, "File lưu trữ không còn khả dụng; metadata vẫn được giữ.")
     if len(data) != version.size_bytes or hashlib.sha256(data).hexdigest() != version.sha256:
         raise HTTPException(503, "File lưu trữ đã thay đổi ngoài ứng dụng. Không thể trả đúng phiên bản; cần khôi phục file gốc.")
-    inline = not download and version.media_type in {"application/pdf", "image/png", "image/jpeg", "text/plain"}
+    inline = inline and version.media_type in {"application/pdf", "image/png", "image/jpeg", "text/plain"}
     ascii_name = version.filename.encode("ascii", "ignore").decode().replace('"', "") or "file"
     disposition = f'{"inline" if inline else "attachment"}; filename="{ascii_name}"; filename*=UTF-8\'\'{quote(version.filename)}'
     return Response(content=data, media_type=version.media_type, headers={

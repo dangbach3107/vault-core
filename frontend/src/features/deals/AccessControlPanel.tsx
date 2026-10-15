@@ -1,58 +1,425 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react'
-import { request } from '../../api/workspace'
+import { FormEvent, useEffect, useState } from 'react'
+import { request, type Room, type RoomDetail } from '../../api/workspace'
 import ActionDialog from '../../components/ActionDialog'
+import type { Role } from '../auth/roles'
+import { formatDate, formatDateTime, type Deal } from './types'
 
-type AccessRequest = { id: string; requester: string; requested_level: string; purpose: string; status: string; requested_at: string }
-type AccessGrant = { id: string; user: string; access_level: string; purpose: string; approved_by: string; expires_at: string; revoked_at: string | null }
-type DealAccess = { state: { access_requests?: AccessRequest[]; access_grants?: AccessGrant[] } }
 type DialogAction = { kind: 'approve' | 'reject' | 'revoke'; id: string }
+type RoomFile = { id: string; title: string; version: number; room: string }
 
-export default function AccessControlPanel({ dealId, role }: { dealId: string; role?: string }) {
-  const [data, setData] = useState<DealAccess | null>(null)
-  const [level, setLevel] = useState('L1')
+const LEVEL_LABELS: Record<string, string> = {
+  L1: 'Lớp 1 · Teaser',
+  L2: 'Lớp 2 · Định danh',
+  L3: 'Lớp 3 · Tài liệu hạn chế',
+  CLOSING: 'Tài liệu closing',
+}
+const BASIS_LABELS: Record<string, string> = {
+  SELLER_L1_APPROVAL: 'Seller đã duyệt Teaser',
+  NDA: 'NDA',
+  INDICATIVE_LOI: 'LOI sơ bộ',
+  LOI: 'Đề nghị chính thức',
+}
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Chờ duyệt',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Từ chối',
+  ACTIVE: 'Còn hiệu lực',
+  EXPIRED: 'Hết hạn',
+  REVOKED: 'Đã thu hồi',
+}
+
+/** Files of the seller's rooms, so the approver can pick exactly what opens. */
+function useSellerFiles(
+  companyId: string | null | undefined,
+  enabled: boolean,
+) {
+  const [files, setFiles] = useState<RoomFile[]>([])
+  useEffect(() => {
+    if (!enabled || !companyId) return
+    request<Room[]>(`/rooms?company_id=${companyId}`)
+      .then((rooms) =>
+        Promise.all(
+          rooms.map((room) => request<RoomDetail>(`/rooms/${room.id}`)),
+        ),
+      )
+      .then((details) =>
+        setFiles(
+          details.flatMap((room) =>
+            room.documents.map((document) => ({
+              id: document.id,
+              title: document.title,
+              version: document.current_version,
+              room: room.title,
+            })),
+          ),
+        ),
+      )
+      .catch(() => setFiles([]))
+  }, [companyId, enabled])
+  return files
+}
+
+export default function AccessControlPanel({
+  deal,
+  role,
+  onChange,
+}: {
+  deal: Deal
+  role: Role
+  onChange: (deal: Deal) => void
+}) {
+  const [level, setLevel] = useState('L2')
   const [purpose, setPurpose] = useState('')
   const [message, setMessage] = useState('')
   const [dialog, setDialog] = useState<DialogAction | null>(null)
   const [reason, setReason] = useState('')
   const [expires, setExpires] = useState('')
+  const [basisRef, setBasisRef] = useState('')
+  const [canDownload, setCanDownload] = useState(false)
+  const [chosen, setChosen] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
-  const load = useCallback(() => request<DealAccess>(`/deals/${dealId}`).then(setData).catch((error) => setMessage(error.message)), [dealId])
-  useEffect(() => { void load() }, [load])
+  const canDecide = role === 'SELLER' || role === 'LEGAL'
+  const canRevoke = canDecide || role === 'VAULT_ADMIN'
+  const files = useSellerFiles(deal.state.seller_profile?.company_id, canDecide)
+  const requests = deal.state.access_requests || []
+  const grants = deal.state.access_grants || []
+  const events = deal.state.access_events || []
+
   const submit = async (event: FormEvent) => {
-    event.preventDefault(); setMessage('Đang gửi yêu cầu…')
-    try { await request(`/deals/${dealId}/access-requests`, { method: 'POST', body: JSON.stringify({ requested_level: level, purpose, document_ids: [] }) }); setPurpose(''); setMessage('Đã gửi yêu cầu cho Seller/Legal.'); await load() }
-    catch (error) { setMessage((error as Error).message) }
+    event.preventDefault()
+    setMessage('Đang gửi yêu cầu…')
+    try {
+      onChange(
+        await request<Deal>(`/deals/${deal.id}/access-requests`, {
+          method: 'POST',
+          body: JSON.stringify({
+            requested_level: level,
+            purpose,
+            document_ids: [],
+          }),
+        }),
+      )
+      setPurpose('')
+      setMessage('Đã gửi yêu cầu cho Seller/Legal.')
+    } catch (error) {
+      setMessage((error as Error).message)
+    }
   }
-  const openDialog = (action: DialogAction) => { setReason(''); setExpires(''); setDialog(action) }
+  const openDialog = (action: DialogAction) => {
+    setReason('')
+    setExpires('')
+    setBasisRef('')
+    setCanDownload(false)
+    setChosen(
+      requests.find((item) => item.id === action.id)?.document_ids || [],
+    )
+    setDialog(action)
+  }
   const submitDialog = async () => {
     if (!dialog || !reason.trim()) return
     setSaving(true)
     try {
       if (dialog.kind === 'revoke') {
-        await request(`/deals/${dealId}/access-grants/${dialog.id}/revoke`, { method: 'POST', body: JSON.stringify({ reason: reason.trim() }) })
+        onChange(
+          await request<Deal>(
+            `/deals/${deal.id}/access-grants/${dialog.id}/revoke`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ reason: reason.trim() }),
+            },
+          ),
+        )
         setMessage('Đã thu hồi quyền.')
       } else {
         const approved = dialog.kind === 'approve'
-        await request(`/deals/${dealId}/access-requests/${dialog.id}/decision`, { method: 'POST', body: JSON.stringify({ approved, reason: reason.trim(), expires_at: approved && expires ? `${expires}T23:59:59Z` : null }) })
-        setMessage(approved ? 'Đã cấp quyền có thời hạn.' : 'Đã từ chối yêu cầu.')
+        onChange(
+          await request<Deal>(
+            `/deals/${deal.id}/access-requests/${dialog.id}/decision`,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                approved,
+                reason: reason.trim(),
+                expires_at: approved && expires ? `${expires}T23:59:59Z` : null,
+                ...(approved
+                  ? {
+                      basis_ref: basisRef.trim(),
+                      can_download: canDownload,
+                      document_ids: chosen,
+                    }
+                  : {}),
+              }),
+            },
+          ),
+        )
+        setMessage(
+          approved ? 'Đã cấp quyền có thời hạn.' : 'Đã từ chối yêu cầu.',
+        )
       }
-      setDialog(null); await load()
-    } catch (error) { setMessage((error as Error).message) }
-    finally { setSaving(false) }
+      setDialog(null)
+    } catch (error) {
+      setMessage((error as Error).message)
+    } finally {
+      setSaving(false)
+    }
   }
-  const requests = data?.state.access_requests || []
-  const grants = data?.state.access_grants || []
-  const canDecide = role === 'SELLER' || role === 'LEGAL'
-  const canRevoke = canDecide || role === 'VAULT_ADMIN'
-  return <section className="panel access-control-panel">
-    <div className="section-title"><div><p className="eyebrow">Controlled access</p><h2>Yêu cầu & quyền truy cập dữ liệu</h2><p className="muted">Quyền theo người, deal, mục đích, tầng dữ liệu, scope và thời hạn.</p></div><span className="status-pill">{grants.filter((grant) => !grant.revoked_at).length} quyền active</span></div>
-    {role === 'BUYER' && <form className="access-request-form" onSubmit={submit}><label>Tầng cần truy cập<select value={level} onChange={(event) => setLevel(event.target.value)}><option>L1</option><option>L2</option><option>L3</option><option>CLOSING</option></select></label><label>Mục đích sử dụng<input value={purpose} onChange={(event) => setPurpose(event.target.value)} minLength={3} maxLength={500} required placeholder="Ví dụ: đánh giá strategic fit và financial DD" /></label><button>Gửi access request</button></form>}
-    {message && <p className="notice" role="status">{message}</p>}
-    <div className="access-columns"><div><h3>Yêu cầu</h3>{requests.length === 0 ? <p className="muted">Chưa có yêu cầu.</p> : requests.map((item) => <article className="access-item" key={item.id}><strong>{item.requester} · {item.requested_level}</strong><p>{item.purpose}</p><span className="status-pill">{item.status}</span>{canDecide && item.status === 'PENDING' && <div className="actions"><button onClick={() => openDialog({ kind: 'approve', id: item.id })}>Duyệt có thời hạn</button><button className="secondary" onClick={() => openDialog({ kind: 'reject', id: item.id })}>Từ chối</button></div>}</article>)}</div>
-      <div><h3>Quyền đã cấp</h3>{grants.length === 0 ? <p className="muted">Chưa có quyền.</p> : grants.map((grant) => <article className="access-item" key={grant.id}><strong>{grant.user} · {grant.access_level}</strong><p>{grant.purpose}</p><small>Duyệt bởi {grant.approved_by} · hết hạn {new Date(grant.expires_at).toLocaleDateString('vi-VN')}</small>{grant.revoked_at ? <span className="status-pill">REVOKED</span> : canRevoke && <button className="danger-button" onClick={() => openDialog({ kind: 'revoke', id: grant.id })}>Thu hồi</button>}</article>)}</div></div>
-    {dialog && <ActionDialog title={dialog.kind === 'approve' ? 'Duyệt quyền truy cập' : dialog.kind === 'reject' ? 'Từ chối yêu cầu' : 'Thu hồi quyền truy cập'} description={dialog.kind === 'approve' ? 'Nhập phạm vi/lý do và thời hạn cụ thể cho quyền này.' : 'Lý do sẽ được lưu trong lịch sử kiểm soát truy cập.'} confirmLabel={dialog.kind === 'approve' ? 'Duyệt quyền' : dialog.kind === 'reject' ? 'Từ chối' : 'Thu hồi quyền'} danger={dialog.kind !== 'approve'} busy={saving} onCancel={() => setDialog(null)} onSubmit={submitDialog}>
-      <label>Lý do / phạm vi<textarea value={reason} onChange={(event) => setReason(event.target.value)} required minLength={3} maxLength={500} rows={3} /></label>
-      {dialog.kind === 'approve' && <label>Ngày hết hạn<input type="date" value={expires} onChange={(event) => setExpires(event.target.value)} required /></label>}
-    </ActionDialog>}
-  </section>
+
+  return (
+    <section
+      className="panel access-control-panel"
+      aria-labelledby="access-title"
+    >
+      <div className="section-title">
+        <div>
+          <p className="eyebrow">Quyền truy cập</p>
+          <h2 id="access-title">Yêu cầu và quyền đã cấp</h2>
+          <p className="muted">
+            Quyền gắn với người, deal, mục đích, lớp, từng file và phiên bản, có
+            hạn và thu hồi được. NDA hay LOI chỉ là căn cứ, không tự mở quyền.
+          </p>
+        </div>
+        <span className="status-pill">
+          {grants.filter((grant) => grant.status === 'ACTIVE').length} quyền còn
+          hiệu lực
+        </span>
+      </div>
+      {role === 'BUYER' && (
+        <form className="access-request-form" onSubmit={submit}>
+          <label>
+            Lớp cần truy cập
+            <select
+              value={level}
+              onChange={(event) => setLevel(event.target.value)}
+            >
+              {Object.entries(LEVEL_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Mục đích sử dụng
+            <input
+              value={purpose}
+              onChange={(event) => setPurpose(event.target.value)}
+              minLength={3}
+              maxLength={500}
+              required
+              placeholder="Ví dụ: đánh giá mức phù hợp và thẩm định tài chính"
+            />
+          </label>
+          <button>Gửi yêu cầu</button>
+        </form>
+      )}
+      {message && (
+        <p className="notice" role="status">
+          {message}
+        </p>
+      )}
+      <div className="access-columns">
+        <div>
+          <h3>Yêu cầu</h3>
+          {requests.length === 0 ? (
+            <p className="muted">Chưa có yêu cầu.</p>
+          ) : (
+            requests.map((item) => (
+              <article className="access-item" key={item.id}>
+                <strong>
+                  {item.requester} ·{' '}
+                  {LEVEL_LABELS[item.requested_level] || item.requested_level}
+                </strong>
+                <p>{item.purpose}</p>
+                <small>
+                  Gửi {formatDateTime(item.requested_at)}
+                  {item.reason ? ` · Lý do: ${item.reason}` : ''}
+                </small>
+                <span className={`status-pill ${item.status.toLowerCase()}`}>
+                  {STATUS_LABELS[item.status]}
+                </span>
+                {canDecide && item.status === 'PENDING' && (
+                  <div className="actions">
+                    <button
+                      onClick={() =>
+                        openDialog({ kind: 'approve', id: item.id })
+                      }
+                    >
+                      Duyệt có thời hạn
+                    </button>
+                    <button
+                      className="secondary"
+                      onClick={() =>
+                        openDialog({ kind: 'reject', id: item.id })
+                      }
+                    >
+                      Từ chối
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))
+          )}
+        </div>
+        <div>
+          <h3>Quyền đã cấp</h3>
+          {grants.length === 0 ? (
+            <p className="muted">Chưa có quyền.</p>
+          ) : (
+            grants.map((grant) => (
+              <article className="access-item" key={grant.id}>
+                <strong>
+                  {grant.user} ·{' '}
+                  {LEVEL_LABELS[grant.access_level] || grant.access_level}
+                </strong>
+                <p>{grant.purpose}</p>
+                <small>
+                  Căn cứ: {BASIS_LABELS[grant.basis || ''] || 'Chưa ghi'}
+                  {grant.basis_ref ? ` (${grant.basis_ref})` : ''} · Duyệt bởi{' '}
+                  {grant.approved_by} · Hết hạn {formatDate(grant.expires_at)} ·{' '}
+                  {grant.can_download ? 'Được tải xuống' : 'Chỉ xem'}
+                </small>
+                {(grant.documents || []).length > 0 && (
+                  <ul className="grant-files">
+                    {grant.documents!.map((file) => (
+                      <li key={file.document_id}>
+                        {file.title} · phiên bản {file.version_number}
+                        {file.latest_version > file.version_number &&
+                          ` (đã có phiên bản ${file.latest_version}, cần duyệt lại)`}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {grant.revoke_reason && (
+                  <small>Lý do thu hồi: {grant.revoke_reason}</small>
+                )}
+                <span className={`status-pill ${grant.status.toLowerCase()}`}>
+                  {STATUS_LABELS[grant.status]}
+                </span>
+                {grant.status === 'ACTIVE' && canRevoke && (
+                  <button
+                    className="danger-button"
+                    onClick={() => openDialog({ kind: 'revoke', id: grant.id })}
+                  >
+                    Thu hồi
+                  </button>
+                )}
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+      {events.length > 0 && (
+        <details className="access-log">
+          <summary>Nhật ký truy cập ({events.length})</summary>
+          <ul>
+            {events.map((item, index) => (
+              <li key={index}>
+                {formatDateTime(item.at)} · {item.actor} · {item.type}
+                {item.version_number
+                  ? ` · phiên bản ${item.version_number}`
+                  : ''}
+                {item.reason ? ` · ${item.reason}` : ''}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {dialog && (
+        <ActionDialog
+          title={
+            dialog.kind === 'approve'
+              ? 'Duyệt quyền truy cập'
+              : dialog.kind === 'reject'
+                ? 'Từ chối yêu cầu'
+                : 'Thu hồi quyền truy cập'
+          }
+          description={
+            dialog.kind === 'approve'
+              ? 'Chọn file, thời hạn và quyền tải. Quyền chỉ áp dụng cho phiên bản hiện tại của từng file.'
+              : 'Lý do sẽ được lưu trong nhật ký truy cập.'
+          }
+          confirmLabel={
+            dialog.kind === 'approve'
+              ? 'Duyệt quyền'
+              : dialog.kind === 'reject'
+                ? 'Từ chối'
+                : 'Thu hồi quyền'
+          }
+          danger={dialog.kind !== 'approve'}
+          busy={saving}
+          onCancel={() => setDialog(null)}
+          onSubmit={submitDialog}
+        >
+          <label>
+            Lý do / phạm vi
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+              minLength={3}
+              maxLength={500}
+              rows={3}
+            />
+          </label>
+          {dialog.kind === 'approve' && (
+            <>
+              <label>
+                Ngày hết hạn
+                <input
+                  type="date"
+                  value={expires}
+                  onChange={(event) => setExpires(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Số/ngày văn bản căn cứ (NDA, LOI)
+                <input
+                  value={basisRef}
+                  onChange={(event) => setBasisRef(event.target.value)}
+                  maxLength={200}
+                  placeholder="Ví dụ: NDA-2026-014"
+                />
+              </label>
+              <fieldset className="file-picker">
+                <legend>File được mở</legend>
+                {files.length === 0 ? (
+                  <p className="muted">
+                    Phòng dữ liệu của seller chưa có file. Có thể duyệt chỉ lớp
+                    hồ sơ.
+                  </p>
+                ) : (
+                  files.map((file) => (
+                    <label key={file.id} className="check-row">
+                      <input
+                        type="checkbox"
+                        checked={chosen.includes(file.id)}
+                        onChange={(event) =>
+                          setChosen((value) =>
+                            event.target.checked
+                              ? [...value, file.id]
+                              : value.filter((id) => id !== file.id),
+                          )
+                        }
+                      />
+                      {file.title} · phiên bản {file.version}
+                      <span className="muted"> · {file.room}</span>
+                    </label>
+                  ))
+                )}
+              </fieldset>
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={canDownload}
+                  onChange={(event) => setCanDownload(event.target.checked)}
+                />
+                Cho phép tải xuống (mặc định chỉ xem)
+              </label>
+            </>
+          )}
+        </ActionDialog>
+      )}
+    </section>
+  )
 }
