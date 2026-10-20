@@ -8,6 +8,7 @@ from backend.app.core.config import REPOSITORY_ROOT, Settings
 from backend.app.api.companies import router as company_router
 from backend.app.api.rooms import router as room_router
 from backend.app.api.deals import router as deal_router
+from backend.app.api.reviews import router as review_router
 from backend.app.api.auth import router as auth_router
 from backend.app.api.body_limit import BodyLimitMiddleware
 from backend.app.api.security_headers import SecurityHeadersMiddleware
@@ -49,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(company_router, prefix=settings.api_v1_str)
     application.include_router(room_router, prefix=settings.api_v1_str)
     application.include_router(deal_router, prefix=settings.api_v1_str)
+    application.include_router(review_router, prefix=settings.api_v1_str)
 
     frontend_dist = REPOSITORY_ROOT / "frontend" / "dist"
     if frontend_dist.is_dir():

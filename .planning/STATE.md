@@ -1,6 +1,30 @@
 # Hiện trạng VAULT
 
-Cập nhật: **2026-10-15**.
+Cập nhật: **2026-10-20**.
+
+## Cập nhật 2026-10-20 — quy trình duyệt dữ kiện (bước 3 kế hoạch tiếp)
+
+- Migration `0008` thêm bảng `fact_reviews`. Seller (chủ hồ sơ) hoặc Admin gửi duyệt từng dữ kiện (kể cả doanh thu/EBITDA theo năm) kèm nguồn, ngày nguồn và file bằng chứng trong phòng dữ liệu của chính doanh nghiệp (phiên bản cố định lúc gửi).
+- Legal/Admin duyệt ở `#/reviews`: chấp thuận (đã đối chiếu chứng từ / bên thứ ba xác nhận) hoặc từ chối kèm lý do. Người gửi không tự duyệt; dữ kiện đổi sau khi gửi → 409, cần gửi lại.
+- Không ai gắn nhãn xác minh bằng cách sửa hồ sơ nữa (kể cả Admin) — chỉ qua quyết định duyệt; `reviewed_by` là tài khoản người duyệt.
+- Giao diện: tab "Nguồn & xác minh" có bảng gửi duyệt và lịch sử; trang "Duyệt dữ kiện" cho Legal/Admin; ô nhãn xác minh trong form hồ sơ bị khóa.
+- Xác minh: 61 test Python, 24 test frontend, 8 test Chromium, tsc, eslint, OpenAPI, alembic check.
+
+## Cập nhật 2026-10-20 — form nghiệp vụ (bước 2 kế hoạch tiếp)
+
+- Nhu cầu mua, NDA, LOI sơ bộ, đề nghị chính thức, bàn giao có form riêng (schema `BuyerRequestForm`, `NdaForm`, `OfferForm`, `HandoffForm` trong `DealActionInput`); thiếu form hoặc gửi form sai bước → 422.
+- NDA (số hiệu, các bên, ngày ký, hết hạn, file tùy chọn) là căn cứ Lớp 2; LOI sơ bộ là căn cứ Lớp 3; đề nghị chính thức là căn cứ tài liệu closing. Căn cứ hết hạn → 409; quyền không được kéo dài quá hạn căn cứ → 422; số hiệu căn cứ tự gắn vào quyền.
+- LOI/đề nghị có giá (khoảng), cơ sở định giá EV/Equity, số ngày độc quyền, hạn hiệu lực.
+- Giao diện: form theo bước trong "Việc của bạn", khối "Nội dung đã ghi nhận", hộp duyệt quyền hiện căn cứ và giới hạn ngày.
+- Migration `0007` dựng lại deal minh họa theo form mới (chỉ deal `is_sample`).
+- Xác minh: 60 test Python, 24 test frontend, 7 test Chromium, tsc, eslint, OpenAPI, alembic check.
+
+## Cập nhật 2026-10-20 — vá quyền phòng dữ liệu (bước 1 kế hoạch tiếp)
+
+- Tech DD: `/rooms` chỉ trả phòng của seller có deal đã mở phòng dữ liệu, chưa đóng, chưa dừng; phòng khác trả 404.
+- Finance: đọc chứng từ closing theo deal (`/deals/<id>/closing-evidence`) — đúng file và phiên bản Legal/Admin đính kèm ở checklist điều kiện đóng, ký, đóng. File đính kèm phải thuộc phòng dữ liệu của seller trong deal (422 nếu không). Finance vẫn không vào phòng dữ liệu.
+- Giao diện: ô chọn file chứng từ ở các bước đó; mục "Chứng từ ký và đóng" trong khối Finance; ẩn nút tạo/tải lên/xóa với vai trò chỉ đọc.
+- Xác minh: 57 test Python, 22 test frontend, 6 test Chromium, tsc, eslint, OpenAPI.
 
 ## Cập nhật 2026-10-15 — sửa theo góp ý GUI/Tech 14/10
 

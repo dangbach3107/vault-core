@@ -105,6 +105,18 @@ def verified_fact_changed(old, new) -> bool:
     return False
 
 
+def find_fact(profile: dict, path: str) -> dict | None:
+    """A fact by review path: a top-level key, or financials.<year>.revenue_vnd|ebitda_vnd."""
+    parts = path.split(".")
+    if len(parts) == 1:
+        fact = profile.get(path)
+        return fact if isinstance(fact, dict) and "verification" in fact else None
+    if len(parts) == 3 and parts[0] == "financials" and parts[1].isdigit() and parts[2] in {"revenue_vnd", "ebitda_vnd"}:
+        row = next((item for item in profile.get("financials") or [] if item.get("year") == int(parts[1])), None)
+        return row.get(parts[2]) if row else None
+    return None
+
+
 def preview(company: Company, layer: int):
     profile = CompanyInput.model_validate(company.profile)
     if layer == 1:

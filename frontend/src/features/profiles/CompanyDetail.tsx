@@ -5,6 +5,7 @@ import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import { fields, optionLabels } from './fields'
 import { FactView, PreviewBody } from './PreviewView'
+import FactReviewPanel from './FactReviewPanel'
 import ActionDialog from '../../components/ActionDialog'
 
 type Tab = 'overview' | 'finance' | 'source' | 'rooms' | 'preview'
@@ -101,30 +102,32 @@ export default function CompanyDetail({
           </button>
         </div>
       </div>
-      {confirmDelete && <ActionDialog
-        title={`Xóa hồ sơ “${company.profile.company_name.value}”?`}
-        description="Hồ sơ nháp sẽ bị xóa vĩnh viễn. Hồ sơ có phòng dữ liệu liên quan sẽ được backend chặn để bảo toàn tài liệu."
-        confirmLabel="Xóa hồ sơ"
-        danger
-        busy={deleting}
-        onCancel={() => setConfirmDelete(false)}
-        onSubmit={async () => {
-              setDeleting(true)
-              setDeleteError('')
-              try {
-                await request(`/companies/${id}`, { method: 'DELETE' })
-                location.hash = '/companies'
-              } catch (error) {
-                setDeleteError(
-                  error instanceof Error
-                    ? error.message
-                    : 'Không xoá được hồ sơ.',
-                )
-                setDeleting(false)
-                setConfirmDelete(false)
-              }
-        }}
-      />}
+      {confirmDelete && (
+        <ActionDialog
+          title={`Xóa hồ sơ “${company.profile.company_name.value}”?`}
+          description="Hồ sơ nháp sẽ bị xóa vĩnh viễn. Hồ sơ có phòng dữ liệu liên quan sẽ được backend chặn để bảo toàn tài liệu."
+          confirmLabel="Xóa hồ sơ"
+          danger
+          busy={deleting}
+          onCancel={() => setConfirmDelete(false)}
+          onSubmit={async () => {
+            setDeleting(true)
+            setDeleteError('')
+            try {
+              await request(`/companies/${id}`, { method: 'DELETE' })
+              location.hash = '/companies'
+            } catch (error) {
+              setDeleteError(
+                error instanceof Error
+                  ? error.message
+                  : 'Không xoá được hồ sơ.',
+              )
+              setDeleting(false)
+              setConfirmDelete(false)
+            }
+          }}
+        />
+      )}
       {deleteError && (
         <p className="error-box" role="alert">
           {deleteError}
@@ -196,6 +199,7 @@ export default function CompanyDetail({
           ))}
         </div>
       )}
+      {tab === 'source' && <FactReviewPanel company={company} />}
       {tab === 'source' && (
         <div className="panel">
           <p className="muted">
@@ -226,7 +230,9 @@ export default function CompanyDetail({
       )}
       {tab === 'preview' && (
         <>
-          <p className="notice">Bản xem trước nội bộ — đổi tab không cấp quyền.</p>
+          <p className="notice">
+            Bản xem trước nội bộ — đổi tab không cấp quyền.
+          </p>
           <div className="tabs" aria-label="Chọn lớp xem trước">
             {['Lớp 1 · Ẩn danh', 'Lớp 2 · Định danh', 'Lớp 3 · Hạn chế'].map(
               (label, index) => (

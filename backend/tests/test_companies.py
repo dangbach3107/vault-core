@@ -157,42 +157,86 @@ def test_validation(client, patch):
     assert client.get("/api/v1/companies?q=SYNTH-010101").json() == []
 
 
-def test_verification_lineage_and_conflicted_projection(client):
-    body = draft()
-    body["company_name"] |= {"verification": "THIRD_PARTY_CONFIRMED", "source": "Synthetic reviewer report", "source_date": "2025-01-01", "reviewed_by": "Reviewer sample", "reviewed_on": "2025-02-01"}
-    company = create(client, body)
-    assert company["profile"]["company_name"]["verification"] == "THIRD_PARTY_CONFIRMED"
-    update = {"expected_revision": 1, "profile": deepcopy(company["profile"])}
-    update["profile"]["company_name"]["value"] = "Changed after review"
-    path = f'/api/v1/companies/{company["id"]}'
-    assert client.put(path, json=update).status_code == 422
-    update["profile"]["company_name"]["verification"] = "SELF_DECLARED"
-    update["profile"]["region"]["issue"] = "CONFLICTED"
-    assert client.put(path, json=update).status_code == 200
-    assert client.get(path + "/preview/1").json()["region"] is None
-    update["expected_revision"] = 2
-    update["profile"]["company_name"]["verification"] = "DOCUMENT_VERIFIED"
-    update["profile"]["company_name"]["issue"] = "EXPIRED"
-    assert client.put(path, json=update).status_code == 422
+def review(client, company_id, field, requester="seller", **extra):
+    body = {"field": field, "source": "Giấy đăng ký doanh nghiệp mẫu", "source_date": "2025-01-01", **extra}
+    return client.post(f"/api/v1/companies/{company_id}/reviews", json=body, headers=auth_headers(client, requester))
 
 
-def test_only_reviewer_marks_facts_verified(client):
-    seller = auth_headers(client, "seller")
-    evidence = {"verification": "DOCUMENT_VERIFIED", "source": "Giấy phép mẫu", "source_date": "2025-01-01", "reviewed_by": "seller", "reviewed_on": "2025-02-01"}
+def decide(client, review_id, reviewer="legal", **body):
+    return client.post(f"/api/v1/reviews/{review_id}/decision", json={"approved": True, "verification": "DOCUMENT_VERIFIED", "reason": "Khớp chứng từ", **body}, headers=auth_headers(client, reviewer))
+
+
+def seller_company(client):
+    response = client.post("/api/v1/companies", json=draft(), headers=auth_headers(client, "seller"))
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_nobody_sets_verified_labels_by_editing_the_profile(client):
+    evidence = {"verification": "DOCUMENT_VERIFIED", "source": "Giấy phép mẫu", "source_date": "2025-01-01", "reviewed_by": "admin", "reviewed_on": "2025-02-01"}
     body = draft()
     body["company_name"] |= evidence
-    assert client.post("/api/v1/companies", json=body, headers=seller).status_code == 403
-    company = client.post("/api/v1/companies", json=draft(), headers=seller).json()
-    path = f'/api/v1/companies/{company["id"]}'
+    assert client.post("/api/v1/companies", json=body, headers=auth_headers(client, "seller")).status_code == 403
+    assert client.post("/api/v1/companies", json=body).status_code == 403  # default client is VAULT Admin
+    company = seller_company(client)
     update = {"expected_revision": 1, "profile": deepcopy(company["profile"])}
     update["profile"]["company_name"] |= evidence
-    assert client.put(path, json=update, headers=seller).status_code == 403
-    reviewed = client.put(path, json=update)  # the default client is VAULT Admin, the reviewer
-    assert reviewed.status_code == 200
-    # The seller may still save other self-declared edits without touching the reviewed fact.
-    again = {"expected_revision": 2, "profile": deepcopy(reviewed.json()["profile"])}
-    again["profile"]["employees"]["value"] = 12
-    assert client.put(path, json=again, headers=seller).status_code == 200
+    assert client.put(f'/api/v1/companies/{company["id"]}', json=update).status_code == 403
+
+
+def test_review_flow_verifies_with_evidence_and_keeps_lineage(client):
+    company = seller_company(client)
+    path = f'/api/v1/companies/{company["id"]}'
+    seller = auth_headers(client, "seller")
+    room = client.post("/api/v1/rooms", json={"company_id": company["id"], "title": "Hồ sơ pháp lý"}, headers=seller).json()
+    document = client.post(f'/api/v1/rooms/{room["id"]}/documents', data={"folder": "LEGAL_CORPORATE", "title": "Giấy ĐKDN"},
+                           files={"file": ("dkdn.txt", b"synthetic registration", "text/plain")}, headers=seller).json()
+    assert review(client, company["id"], "unknown_field").status_code == 422
+    assert review(client, company["id"], "founded_year").status_code == 409  # no value yet
+    requested = review(client, company["id"], "employees", document_id=document["id"])
+    assert requested.status_code == 201, requested.text
+    item = requested.json()
+    assert item["value"] == 120 and item["document"]["version_number"] == 1 and item["status"] == "PENDING"
+    assert review(client, company["id"], "employees").status_code == 409  # already pending
+    queue = client.get("/api/v1/reviews", headers=auth_headers(client, "legal")).json()
+    assert item["id"] in {row["id"] for row in queue}
+    assert client.get("/api/v1/reviews", headers=seller).status_code == 403
+    assert decide(client, item["id"], reviewer="seller").status_code == 403
+    assert decide(client, item["id"], verification=None).status_code == 422
+    approved = decide(client, item["id"])
+    assert approved.status_code == 200, approved.text
+    fact = client.get(path, headers=seller).json()["profile"]["employees"]
+    assert fact["verification"] == "DOCUMENT_VERIFIED" and fact["reviewed_by"] == "legal" and fact["source"] == "Giấy đăng ký doanh nghiệp mẫu"
+    assert client.get("/api/v1/companies", headers=seller).json()[0]["verified_facts_count"] == 1
+    assert decide(client, item["id"]).status_code == 409  # already decided
+    # Editing a verified value must go back to self-declared; conflict cannot stay verified.
+    profile = client.get(path, headers=seller).json()
+    update = {"expected_revision": profile["revision"], "profile": deepcopy(profile["profile"])}
+    update["profile"]["employees"]["value"] = 150
+    assert client.put(path, json=update, headers=seller).status_code == 422
+    update["profile"]["employees"] |= {"verification": "SELF_DECLARED", "issue": "CONFLICTED"}
+    assert client.put(path, json=update, headers=seller).status_code == 200
+    assert review(client, company["id"], "employees").status_code == 409  # conflicted
+
+
+def test_review_rejection_self_review_and_stale_value(client):
+    company = seller_company(client)
+    path = f'/api/v1/companies/{company["id"]}'
+    rejected = decide(client, review(client, company["id"], "tax_id").json()["id"], approved=False, verification=None, reason="Thiếu chứng từ")
+    assert rejected.json()["status"] == "REJECTED" and rejected.json()["reason"] == "Thiếu chứng từ"
+    own = review(client, company["id"], "sector", requester="admin").json()
+    assert decide(client, own["id"], reviewer="admin").status_code == 409  # requester cannot decide
+    stale = review(client, company["id"], "financials.2025.revenue_vnd").json()
+    assert stale["value"] == "25000000000.01"
+    seller = auth_headers(client, "seller")
+    profile = client.get(path, headers=seller).json()
+    update = {"expected_revision": profile["revision"], "profile": deepcopy(profile["profile"])}
+    update["profile"]["financials"][0]["revenue_vnd"]["value"] = "26000000000"
+    assert client.put(path, json=update, headers=seller).status_code == 200
+    assert decide(client, stale["id"]).status_code == 409
+    other_seller = auth_headers(client, "seller2")
+    assert client.get(path + "/reviews", headers=other_seller).status_code == 404
+    assert [row["field"] for row in client.get(path + "/reviews", headers=seller).json()] == ["financials.2025.revenue_vnd", "sector", "tax_id"]
 
 
 def test_disabled_preview_does_not_enable_business_routes():

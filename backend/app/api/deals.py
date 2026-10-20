@@ -17,7 +17,7 @@ from backend.app.db.models import Company, Deal, Document, DocumentVersion, Room
 from backend.app.schemas.auth import UserResponse
 from backend.app.schemas.company import AnonymousPreview, IdentifiedPreview, RestrictedPreview
 from backend.app.schemas.deal import (
-    AccessDecisionInput, AccessRequestInput, CatalogAction, CatalogStage, DealAction, DealActionInput,
+    AccessDecisionInput, AccessRequestInput, CatalogAction, ClosingEvidence, CatalogStage, DealAction, DealActionInput,
     DealCatalog, DealCreate, DealDocument, DealResponse, FeeInput, FindingInput, FindingUpdate,
     InvoiceInput, PaymentInput, RevokeAccessInput, WorkflowStepInput,
 )
@@ -72,12 +72,17 @@ ACTION_ROLES = {
     "legalL3Approval": "LEGAL", "crossBorderApproval": "LEGAL", "noEscrowConfirmed": "LEGAL", "legalClosingChecklist": "LEGAL", "spaSigned": "LEGAL",
     "techDdSigned": "TECH_DD", "prepPackageFeeRecorded": "FINANCE", "successFeeRecorded": "FINANCE",
 }
-# Actions whose record is the evidence itself, so an empty note is not enough.
+# Business steps that need a typed form; the value is the DealActionInput field holding it.
+FORM_ACTIONS = {
+    "buyerRequest": ("buyer_request", "Cần điền form nhu cầu mua."),
+    "ndaRecorded": ("nda", "Cần điền form NDA (số hiệu, các bên, ngày ký, ngày hết hạn)."),
+    "indicativeLoiSubmitted": ("offer", "Cần điền form LOI sơ bộ."),
+    "loiSubmitted": ("offer", "Cần điền form đề nghị chính thức."),
+    "postDealHandoff": ("handoff", "Cần điền form bàn giao."),
+}
+FORM_FIELDS = {"buyer_request", "nda", "offer", "handoff"}
+# Steps without a form whose record is the evidence itself, so an empty note is not enough.
 NOTE_REQUIRED = {
-    "buyerRequest": "Mô tả nhu cầu mua (năng lực cần mua, mục tiêu, ngân sách, thời gian).",
-    "ndaRecorded": "Ghi số/ngày NDA đã ký.",
-    "indicativeLoiSubmitted": "Ghi nội dung chính của LOI sơ bộ.",
-    "loiSubmitted": "Ghi nội dung chính của đề nghị chính thức.",
     "spaSigned": "Ghi số/ngày hợp đồng đã ký.",
     "dealClosed": "Ghi bằng chứng hoàn tất điều kiện đóng.",
 }
@@ -105,13 +110,16 @@ WORKFLOW_STAGES = [
 ]
 LEVEL_ORDER = ["L0", "L1", "L2", "L3", "CLOSING"]
 # Approval never follows automatically from the basis; the basis only makes approval possible.
+# level -> (state key of the basis record, basis code, field holding its expiry, document name)
 LEVEL_BASIS = {
-    "L1": ("sellerL1Approval", "SELLER_L1_APPROVAL", "Seller chưa duyệt Teaser."),
-    "L2": ("ndaRecorded", "NDA", "Chưa ghi nhận NDA; không thể mở Lớp 2."),
-    "L3": ("indicativeLoiSubmitted", "INDICATIVE_LOI", "Chưa có LOI sơ bộ; không thể mở Lớp 3."),
-    "CLOSING": ("loiSubmitted", "LOI", "Chưa có đề nghị chính thức; không thể mở tài liệu closing."),
+    "L2": ("nda", "NDA", "expires_on", "NDA"),
+    "L3": ("indicative_loi", "INDICATIVE_LOI", "valid_until", "LOI sơ bộ"),
+    "CLOSING": ("definitive_offer", "LOI", "valid_until", "đề nghị chính thức"),
 }
 FULL_VIEW = {"VAULT_ADMIN", "LEGAL"}
+# Files cited on these steps are the closing evidence Finance may read.
+EVIDENCE_ACTIONS = ["legalClosingChecklist", "spaSigned", "dealClosed"]
+EVIDENCE_ROLES = {"FINANCE", "LEGAL", "VAULT_ADMIN"}
 
 
 def now_iso():
@@ -127,7 +135,7 @@ def initial_state(seller_company_id=None, buyer_username=None):
         "buyer_request": None, "seller_profile": {"company_id": str(seller_company_id) if seller_company_id else None},
         "approvals": [], "indicative_loi": None, "vdr_opening": None,
         "tech_dd": {"findings": [], "signed_off_at": None, "signed_off_by": None}, "definitive_offer": None,
-        "legal_closing_checklist": None, "fees": [], "signing": None, "closing": None, "handoff": None,
+        "legal_closing_checklist": None, "fees": [], "signing": None, "closing": None, "handoff": None, "nda": None,
         "opportunities": [],
         "access_requests": [], "access_grants": [], "access_events": [],
         "workflow": {
@@ -232,7 +240,7 @@ def project(session, row, user):
         grants = [item for item in state["access_grants"] if mine(item, "user")]
         own_ids = {item["id"] for item in requests} | {item["id"] for item in grants}
         view = {
-            **base, "buyer_request": state["buyer_request"], "indicative_loi": state["indicative_loi"],
+            **base, "buyer_request": state["buyer_request"], "nda": state["nda"], "indicative_loi": state["indicative_loi"],
             "definitive_offer": state["definitive_offer"], "access_requests": requests, "access_grants": grants,
             "access_events": [item for item in state["access_events"] if item.get("request_id") in own_ids or item.get("grant_id") in own_ids],
         }
@@ -333,6 +341,14 @@ def seller_documents(session, state, document_ids):
     return [document for document, _ in rows]
 
 
+def version_snapshot(session, documents):
+    snapshot = []
+    for document in documents:
+        version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == document.id, DocumentVersion.number == document.current_version))
+        snapshot.append({"document_id": str(document.id), "title": document.title, "version_id": str(version.id), "version_number": version.number, "filename": version.filename, "media_type": version.media_type})
+    return snapshot
+
+
 @router.post("/{deal_id}/access-requests", response_model=DealResponse, operation_id="request_deal_access")
 def request_deal_access(deal_id: UUID, body: AccessRequestInput, session: DB, user: User):
     if user.role != "BUYER": raise HTTPException(403, "Chỉ Buyer được gửi yêu cầu truy cập.")
@@ -343,6 +359,22 @@ def request_deal_access(deal_id: UUID, body: AccessRequestInput, session: DB, us
     state["access_requests"].append({"id": request_id, "requester": user.username, "requested_level": body.requested_level, "purpose": body.purpose, "document_ids": [str(value) for value in body.document_ids], "status": "PENDING", "requested_at": now, "decided_at": None, "decided_by": None, "reason": None})
     state["access_events"].append({"type": "ACCESS_REQUESTED", "actor": user.username, "at": now, "request_id": request_id, "level": body.requested_level})
     return save(session, row, state, user)
+
+
+def access_basis(state, level, expires_at):
+    """The record that allows this level, checked for validity; the grant may not outlive it."""
+    if level == "L1":
+        if not state["steps"]["sellerL1Approval"]: raise HTTPException(409, "Seller chưa duyệt Teaser.")
+        return "SELLER_L1_APPROVAL", ""
+    key, basis, expiry_field, name = LEVEL_BASIS[level]
+    record_ = state.get(key) or {}
+    if not record_.get(expiry_field):  # missing, or recorded before forms existed
+        raise HTTPException(409, f"Chưa có {name} được ghi nhận theo form; không thể mở {level}.")
+    valid_until = date.fromisoformat(record_[expiry_field])
+    if valid_until < date.today(): raise HTTPException(409, f"{name} đã hết hạn ngày {valid_until:%d/%m/%Y}; không thể cấp quyền mới.")
+    if expires_at.date() > valid_until:
+        raise HTTPException(422, f"Quyền không được kéo dài quá hạn {name} ({valid_until:%d/%m/%Y}).")
+    return basis, record_.get("reference", "")
 
 
 @router.post("/{deal_id}/access-requests/{request_id}/decision", response_model=DealResponse, operation_id="decide_deal_access")
@@ -356,15 +388,11 @@ def decide_deal_access(deal_id: UUID, request_id: UUID, body: AccessDecisionInpu
     if item["status"] != "PENDING": raise HTTPException(409, "Yêu cầu truy cập đã được xử lý.")
     now = now_iso()
     if body.approved:
-        step, basis, message = LEVEL_BASIS[item["requested_level"]]
-        if not state["steps"][step]: raise HTTPException(409, message)
+        basis, basis_ref = access_basis(state, item["requested_level"], body.expires_at)
         chosen = body.document_ids if body.document_ids is not None else [UUID(value) for value in item["document_ids"]]
         documents = seller_documents(session, state, chosen)
-        snapshot = []
-        for document in documents:  # the grant covers the version the approver saw, not later uploads
-            version = session.scalar(select(DocumentVersion).where(DocumentVersion.document_id == document.id, DocumentVersion.number == document.current_version))
-            snapshot.append({"document_id": str(document.id), "title": document.title, "version_id": str(version.id), "version_number": version.number, "filename": version.filename, "media_type": version.media_type})
-        state["access_grants"].append({"id": str(uuid4()), "request_id": item["id"], "user": item["requester"], "deal_id": str(deal_id), "access_level": item["requested_level"], "documents": snapshot, "document_ids": [str(value) for value in chosen], "purpose": item["purpose"], "basis": basis, "basis_ref": body.basis_ref, "can_download": body.can_download, "approved_by": user.username, "approver_role": user.role, "granted_at": now, "expires_at": body.expires_at.isoformat(), "revoked_at": None, "revoke_reason": None})
+        snapshot = version_snapshot(session, documents)  # the version the approver saw, not later uploads
+        state["access_grants"].append({"id": str(uuid4()), "request_id": item["id"], "user": item["requester"], "deal_id": str(deal_id), "access_level": item["requested_level"], "documents": snapshot, "document_ids": [str(value) for value in chosen], "purpose": item["purpose"], "basis": basis, "basis_ref": basis_ref or body.basis_ref, "can_download": body.can_download, "approved_by": user.username, "approver_role": user.role, "granted_at": now, "expires_at": body.expires_at.isoformat(), "revoked_at": None, "revoke_reason": None})
     item.update({"status": "APPROVED" if body.approved else "REJECTED", "decided_at": now, "decided_by": user.username, "reason": body.reason})
     state["access_events"].append({"type": "ACCESS_APPROVED" if body.approved else "ACCESS_REJECTED", "actor": user.username, "at": now, "request_id": item["id"], "reason": body.reason})
     return save(session, row, state, user)
@@ -577,22 +605,23 @@ def action_blocker(state, action):
     return None
 
 
-def apply_action(state, action, body, user):
-    """Store who did what and their evidence note; never invent business content."""
-    entry = record(user, body.note, document_ids=[str(value) for value in body.document_ids])
+def apply_action(state, action, body, user, documents, form):
+    """Store who did what, the form/note they entered and the file versions they cite; never invent content."""
+    entry = record(user, body.note, document_ids=[str(value) for value in body.document_ids], documents=documents)
     state["records"][action] = entry
-    if action == "buyerRequest": state["buyer_request"] = {"summary": body.note, **entry}
+    if action == "buyerRequest": state["buyer_request"] = {**form, "summary": form["capability"], **entry}
     elif action == "sellerProfile": state["seller_profile"].update({"confirmed_by": user.username, "confirmed_at": entry["at"]})
     elif action in {"sellerL1Approval", "identityRequested", "ndaRecorded", "sellerL2Approval", "legalL3Approval", "crossBorderApproval", "noEscrowConfirmed", "sellerFileApproval"}:
         state["approvals"].append({"action": action, **entry})
-    elif action == "indicativeLoiSubmitted": state["indicative_loi"] = {**entry, "non_binding": True}
+        if action == "ndaRecorded": state["nda"] = {**form, **entry}
+    elif action == "indicativeLoiSubmitted": state["indicative_loi"] = {**form, **entry, "non_binding": True}
     elif action == "vdrOpened": state["vdr_opening"] = entry
     elif action == "techDdSigned": state["tech_dd"].update({"signed_off_at": entry["at"], "signed_off_by": user.username, "sign_off_note": body.note})
-    elif action == "loiSubmitted": state["definitive_offer"] = {**entry, "status": "SUBMITTED"}
+    elif action == "loiSubmitted": state["definitive_offer"] = {**form, **entry, "status": "SUBMITTED"}
     elif action == "legalClosingChecklist": state["legal_closing_checklist"] = entry
     elif action == "spaSigned": state["signing"] = {**entry, "status": "SIGNED"}
     elif action == "dealClosed": state["closing"] = {**entry, "status": "CLOSED", "closed_at": entry["at"]}
-    elif action == "postDealHandoff": state["handoff"] = {**entry, "status": "HANDED_OFF"}
+    elif action == "postDealHandoff": state["handoff"] = {**form, **entry, "status": "HANDED_OFF"}
 
 
 @router.post("/{deal_id}/actions/{action}", response_model=DealResponse, operation_id="complete_deal_action")
@@ -603,10 +632,46 @@ def complete_action(deal_id: UUID, action: DealAction, body: DealActionInput, se
     missing = [ACTION_LABELS[key] for key in REQUIRES.get(action, []) if not state["steps"].get(key)]
     if missing: raise HTTPException(409, f"Chưa đủ điều kiện: {'; '.join(missing)}.")
     if action in NOTE_REQUIRED and len(body.note.strip()) < 3: raise HTTPException(422, NOTE_REQUIRED[action])
+    field, form_message = FORM_ACTIONS.get(action, (None, ""))
+    stray = [name for name in FORM_FIELDS - {field} if getattr(body, name) is not None]
+    if stray: raise HTTPException(422, f"Form {', '.join(stray)} không thuộc bước này.")
+    form = getattr(body, field).model_dump(mode="json") if field and getattr(body, field) is not None else None
+    if field and form is None: raise HTTPException(422, form_message)
     blocker = action_blocker(state, action)
     if blocker: raise HTTPException(409, blocker)
-    apply_action(state, action, body, user); state["steps"][action] = True
+    cited = list(body.document_ids)
+    if field == "nda" and body.nda.document_id: cited.append(body.nda.document_id)
+    documents = version_snapshot(session, seller_documents(session, state, cited))
+    apply_action(state, action, body, user, documents, form); state["steps"][action] = True
     return save(session, row, state, user)
+
+
+# --- Closing evidence: only the files cited when signing/closing, for Finance/Legal/Admin --------
+
+def evidence_items(state):
+    return [{**item, "action": action, "action_label": ACTION_LABELS[action]}
+            for action in EVIDENCE_ACTIONS for item in (state["records"].get(action) or {}).get("documents", [])]
+
+
+def evidence_deal(session, deal_id, user):
+    if user.role not in EVIDENCE_ROLES: raise HTTPException(403, "Chứng từ closing dành cho Finance, Legal và Admin.")
+    return find_deal(session, deal_id, user)
+
+
+@router.get("/{deal_id}/closing-evidence", response_model=list[ClosingEvidence], operation_id="list_closing_evidence")
+def list_closing_evidence(deal_id: UUID, session: DB, user: User):
+    items = evidence_items(normalize(evidence_deal(session, deal_id, user).state))
+    return [ClosingEvidence(**{key: item[key] for key in ClosingEvidence.model_fields}) for item in items]
+
+
+@router.get("/{deal_id}/closing-evidence/{document_id}/content", response_class=FileResponse, operation_id="get_closing_evidence_content")
+def get_closing_evidence_content(deal_id: UUID, document_id: UUID, request: Request, session: DB, user: User, download: bool = False):
+    state = normalize(evidence_deal(session, deal_id, user).state)
+    item = next((value for value in evidence_items(state) if value["document_id"] == str(document_id)), None)
+    if item is None: raise HTTPException(404, "Tài liệu này không phải chứng từ closing của deal.")
+    version = session.get(DocumentVersion, UUID(item["version_id"]))
+    if version is None: raise HTTPException(404, "Phiên bản được dẫn chứng không còn tồn tại.")
+    return version_file(request, session, version, inline=not download)
 
 
 @router.post("/{deal_id}/reset", response_model=DealResponse, operation_id="reset_deal")
@@ -626,17 +691,20 @@ def sample_state(state):
         sample["steps"][action] = True
         sample["records"][action] = {"by": ACTION_ROLES[action].lower(), "at": at(60 - index * 2), "note": "Dữ liệu minh họa", "document_ids": []}
     note = lambda text: {"by": "sample", "at": at(30), "note": f"Dữ liệu minh họa · {text}", "document_ids": []}  # noqa: E731
-    sample["buyer_request"] = {"summary": "Dữ liệu minh họa · Cần phần mềm quản lý kho B2B; ngân sách 70–150 tỷ VND; LOI trong 90 ngày.", **note("nhu cầu mua")}
+    day = lambda offset: (today + timedelta(days=offset)).isoformat()  # noqa: E731
+    sample["buyer_request"] = {"capability": "Dữ liệu minh họa · Phần mềm quản lý kho B2B", "summary": "Dữ liệu minh họa · Phần mềm quản lý kho B2B", "goal": "Mở rộng sang nhà máy Nhật trong 24 tháng", "budget_min_vnd": "70000000000", "budget_max_vnd": "150000000000", "timeline": "LOI trong 90 ngày", **note("nhu cầu mua")}
+    sample["nda"] = {"reference": "MH-NDA-01", "parties": ["Buyer minh họa", "Seller minh họa"], "signed_on": day(-50), "expires_on": day(320), "document_id": None, **note("NDA")}
     sample["approvals"] = [{"action": action, **note(ACTION_LABELS[action])} for action in ("sellerL1Approval", "identityRequested", "ndaRecorded", "sellerL2Approval", "legalL3Approval", "crossBorderApproval", "noEscrowConfirmed", "sellerFileApproval")]
-    sample["indicative_loi"] = {**note("LOI sơ bộ"), "non_binding": True}
+    offer = lambda ref, low, high, valid: {"reference": ref, "price_low_vnd": low, "price_high_vnd": high, "valuation_basis": "EV", "exclusivity_days": 60, "valid_until": day(valid), "conditions": "Dữ liệu minh họa"}  # noqa: E731
+    sample["indicative_loi"] = {**offer("MH-LOI-01", "90000000000", "120000000000", 30), **note("LOI sơ bộ"), "non_binding": True}
     sample["vdr_opening"] = note("mở phòng dữ liệu")
     finding = lambda title, severity, status: {"id": str(uuid4()), "title": title, "severity": severity, "description": "Dữ liệu minh họa", "remediation": "Dữ liệu minh họa", "impact_vnd": None, "status": status, "created_by": "tech", "created_at": at(20), "history": []}  # noqa: E731
     sample["tech_dd"] = {"findings": [finding("Khả năng mở rộng kiến trúc", "HIGH", "ACCEPTED_RISK"), finding("Thiếu bằng chứng giấy phép mã nguồn mở", "MEDIUM", "RESOLVED")], "signed_off_at": at(15), "signed_off_by": "tech", "sign_off_note": "Dữ liệu minh họa"}
-    sample["definitive_offer"] = {**note("đề nghị chính thức"), "status": "SUBMITTED"}
+    sample["definitive_offer"] = {**offer("MH-OFFER-01", "105000000000", None, 45), **note("đề nghị chính thức"), "status": "SUBMITTED"}
     sample["legal_closing_checklist"] = note("điều kiện đóng")
     sample["signing"] = {**note("hợp đồng đã ký"), "status": "SIGNED"}
     sample["closing"] = {**note("đóng giao dịch"), "status": "CLOSED", "closed_at": at(5)}
-    sample["handoff"] = {**note("bàn giao"), "status": "HANDED_OFF"}
+    sample["handoff"] = {"recipient": "Đội tích hợp minh họa", "handed_on": day(-2), "items": ["Mã nguồn", "Tài khoản hạ tầng", "Danh sách khách hàng"], **note("bàn giao"), "status": "HANDED_OFF"}
     fee = lambda kind, amount, due, invoiced, paid: {"id": str(uuid4()), "type": kind, "amount_vnd": amount, "due_on": (today + timedelta(days=due)).isoformat(), "note": "Dữ liệu minh họa", "invoice": {"number": f"MH-{kind}", "issued_on": (today - timedelta(days=30)).isoformat(), "by": "finance"} if invoiced else None, "payments": [{"amount_vnd": paid, "paid_on": (today - timedelta(days=3)).isoformat(), "reference": "Minh họa", "by": "finance"}] if paid else [], "created_by": "finance", "created_at": at(40)}  # noqa: E731
     sample["fees"] = [fee("PREP_PACKAGE", "150000000", -20, True, "150000000"), fee("TECH_DD", "90000000", -2, True, "40000000"), fee("SUCCESS_FEE", "2100000000", 25, True, None)]
     sample["opportunities"] = [{"type": "BUILD_TO_BUY", "status": "OPPORTUNITY", "note": "Dữ liệu minh họa · Cơ hội, chưa phải doanh thu", "at": at(2)}]

@@ -9,7 +9,7 @@ from urllib.parse import quote
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from backend.app.api.companies import ApiError, DB, find_company, find_company_for_user
-from backend.app.db.models import Company, Document, DocumentBlob, DocumentVersion, Room
+from backend.app.db.models import Company, Deal, Document, DocumentBlob, DocumentVersion, Room
 from backend.app.schemas.room import (
     DocumentDetail, DocumentResponse, Folder, FolderResponse, FOLDER_LABELS,
     RoomDetail, RoomInput, RoomResponse, VersionResponse,
@@ -23,12 +23,25 @@ RoomReader = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMI
 RoomEditor = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN"))]
 
 
+def tech_dd_companies(session) -> set[UUID]:
+    """Sellers whose data room is open for diligence: VDR opened, deal neither closed nor stopped."""
+    companies = set()
+    for state in session.scalars(select(Deal.state)):
+        steps = state.get("steps") or {}
+        company_id = (state.get("seller_profile") or {}).get("company_id")
+        if company_id and steps.get("vdrOpened") and not steps.get("dealClosed") and (state.get("workflow") or {}).get("status") != "STOPPED":
+            companies.add(UUID(company_id))
+    return companies
+
+
 def find_room(session, room_id: UUID, user: UserResponse) -> Room:
     room = session.get(Room, room_id)
     if room is None:
         raise HTTPException(404, "Không tìm thấy phòng dữ liệu.")
     if user.role == "SELLER":
         find_company_for_user(session, room.company_id, user)
+    if user.role == "TECH_DD" and room.company_id not in tech_dd_companies(session):
+        raise HTTPException(404, "Không tìm thấy phòng dữ liệu.")
     return room
 
 
@@ -76,6 +89,8 @@ def list_rooms(session: DB, user: RoomReader, company_id: UUID | None = None, of
     query = select(Room, Company.name).join(Company, Room.company_id == Company.id).order_by(Room.created_at.desc(), Room.id)
     if user.role == "SELLER":
         query = query.where(Company.owner_username == user.username)
+    if user.role == "TECH_DD":
+        query = query.where(Room.company_id.in_(tech_dd_companies(session)))
     if company_id:
         query = query.where(Room.company_id == company_id)
     return [room_response(room, name) for room, name in session.execute(query.offset(offset).limit(limit))]

@@ -158,9 +158,11 @@ Trang `#/deals/<id>` là nơi làm việc theo deal; mỗi vai trò mở deal �
 - Quyền truy cập theo người, deal, lớp, từng file và phiên bản, căn cứ (Seller duyệt Teaser / NDA / LOI), quyền xem hoặc tải, thời hạn, thu hồi. NDA hay LOI chỉ là điều kiện, không tự mở lớp. Buyer đọc file qua `/deals/<id>/documents`, đúng phiên bản đã duyệt; mỗi lần xem/tải được ghi nhật ký.
 - Tech DD: ghi finding, Seller phản hồi, chỉ Tech DD đóng/chấp nhận rủi ro; ký xác nhận là bước riêng, bị chặn khi còn finding mở.
 - Finance: khoản phí → hóa đơn → từng lần thanh toán; trạng thái `DRAFT`/`INVOICED`/`PARTIALLY_PAID`/`PAID`/`OVERDUE`. Phí thành công chỉ lập sau Closing. Build to Buy là cơ hội, không phải doanh thu.
-- Ký hợp đồng (`spaSigned`) và đóng giao dịch (`dealClosed`) là hai bước riêng.
+- Ký hợp đồng (`spaSigned`) và đóng giao dịch (`dealClosed`) là hai bước riêng. Khi ghi nhận checklist điều kiện đóng, ký hoặc đóng, Legal/Admin chọn file chứng từ từ phòng dữ liệu của seller; Finance chỉ đọc đúng các file và phiên bản đó qua `/deals/<id>/closing-evidence`, không vào được phòng dữ liệu.
+- Tech DD chỉ thấy phòng dữ liệu của seller trong deal đã mở phòng dữ liệu, chưa đóng và chưa dừng. Legal và Tech DD xem phòng dữ liệu ở chế độ chỉ đọc.
 - Nút "Nạp dữ liệu minh họa" (Admin) gắn cờ `is_sample`; giao diện hiện nhãn "Dữ liệu minh họa". Không dùng nó làm bằng chứng nghiệm thu.
-- Seller chỉ lưu dữ kiện tự khai; nhãn đã xác minh do người duyệt (Admin) gắn.
+- Hồ sơ chỉ lưu dữ kiện tự khai. Muốn có nhãn xác minh, Seller/Admin gửi duyệt dữ kiện (tab "Nguồn & xác minh") kèm nguồn và file bằng chứng; Legal/Admin khác người gửi chấp thuận hoặc từ chối ở `#/reviews`.
+- Nhu cầu mua, NDA, LOI sơ bộ, đề nghị chính thức và bàn giao có form riêng. NDA/LOI là căn cứ để duyệt Lớp 2/Lớp 3/tài liệu closing: căn cứ hết hạn thì không cấp quyền mới, và quyền không được kéo dài quá hạn căn cứ.
 
 Tài khoản: `buyer`, `buyer2`, `seller`, `seller2`, `admin`, `legal`, `tech`, `finance`. Mật khẩu local mặc định là `vault-demo`; đổi bằng `DEMO_ROLE_PASSWORD` và đặt `DEMO_AUTH_SECRET` riêng khi chạy hosted demo. Token có hạn 8 giờ. Cơ chế này dành cho synthetic MVP, không phải SSO/MFA production. Phạm vi đã/chưa làm: [.planning/SCOPE_BASELINE.md](.planning/SCOPE_BASELINE.md).
 

@@ -27,8 +27,8 @@ router = APIRouter(prefix="/companies", tags=["Internal company drafts"], respon
 DB = Annotated[Session, Depends(database_session)]
 CompanyReader = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN", "LEGAL"))]
 CompanyEditor = Annotated[UserResponse, Depends(require_roles("SELLER", "VAULT_ADMIN"))]
-# The provider of a fact cannot mark it verified; that is the reviewer's decision.
-REVIEWER_ONLY = "Seller chỉ lưu dữ kiện tự khai. Nhãn đã xác minh do người duyệt VAULT gắn sau khi kiểm tra chứng từ."
+# Verification is a reviewer's decision with evidence, recorded only through /reviews (api/reviews.py).
+REVIEWER_ONLY = "Hồ sơ chỉ lưu dữ kiện tự khai. Nhãn xác minh được gắn khi người duyệt chấp thuận yêu cầu duyệt dữ kiện có bằng chứng."
 
 
 def find_company(session: Session, company_id: UUID, lock: bool = False) -> Company:
@@ -90,7 +90,7 @@ def list_companies(
 
 @router.post("", response_model=CompanyResponse, status_code=201, operation_id="create_company")
 def create_company(body: CompanyInput, session: DB, user: CompanyEditor):
-    if user.role == "SELLER" and verified_fact_changed({}, body.model_dump(mode="json")):
+    if verified_fact_changed({}, body.model_dump(mode="json")):
         raise HTTPException(403, REVIEWER_ONLY)
     row = Company(alias=f"VAULT-{uuid4().hex[:12].upper()}", owner_username=user.username, name=body.company_name.value, tax_id=body.tax_id.value, profile=body.model_dump(mode="json"))
     session.add(row)
@@ -111,7 +111,7 @@ def update_company(company_id: UUID, body: CompanyUpdate, session: DB, user: Com
     profile = body.profile.model_dump(mode="json")
     if changed_verified_facts(row.profile, profile):
         raise HTTPException(422, [{"loc": ["body", "profile"], "type": "value_error", "msg": "Dữ kiện vừa thay đổi phải lưu nhãn tự khai trước khi đối chiếu lại."}])
-    if user.role == "SELLER" and verified_fact_changed(CompanyInput.model_validate(row.profile).model_dump(mode="json"), profile):
+    if verified_fact_changed(CompanyInput.model_validate(row.profile).model_dump(mode="json"), profile):
         raise HTTPException(403, REVIEWER_ONLY)
     row.profile, row.name, row.tax_id = profile, body.profile.company_name.value, body.profile.tax_id.value
     row.revision += 1

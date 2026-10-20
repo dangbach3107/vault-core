@@ -36,13 +36,44 @@ async function setupDeals(request: APIRequestContext) {
       `/api/v1/deals/${mine.id}/actions/${action}`,
       {
         headers: await authHeaders(request, user),
-        data: { note: 'Ghi chú kiểm thử' },
+        data: {
+          note: 'Ghi chú kiểm thử',
+          ...(action === 'buyerRequest'
+            ? { buyer_request: { capability: 'Phần mềm quản lý kho' } }
+            : {}),
+        },
       },
     )
     expect(response.ok(), action).toBe(true)
   }
   return { mine, other, company }
 }
+
+test('buyer fills the buyer request form and sees what was recorded', async ({
+  page,
+  request,
+}) => {
+  const admin = await authHeaders(request, 'admin')
+  const deal = await (
+    await request.post('/api/v1/deals', {
+      headers: admin,
+      data: { title: `E2E form ${Date.now()}`, buyer_username: 'buyer' },
+    })
+  ).json()
+  await loginAs(page, 'buyer')
+  await page.goto(`/#/deals/${deal.id}`)
+  await page.getByRole('button', { name: 'Thực hiện' }).first().click()
+  await page.getByLabel('Năng lực cần mua *').fill('Phần mềm quản lý kho B2B')
+  await page.getByLabel('Ngân sách tối thiểu').fill('70000000000')
+  await page.getByLabel('Ngân sách tối đa').fill('150000000000')
+  await page.getByRole('button', { name: 'Xác nhận đã hoàn tất' }).click()
+  const records = page.getByRole('region', { name: 'Nội dung đã ghi nhận' })
+  await expect(records.getByText('Phần mềm quản lý kho B2B')).toBeVisible()
+  await expect(
+    records.getByText('70.000.000.000 VND – 150.000.000.000 VND'),
+  ).toBeVisible()
+  await noHorizontalScroll(page)
+})
 
 async function noHorizontalScroll(page: Page) {
   for (const width of [390, 768]) {
@@ -93,6 +124,10 @@ test('finance opens fees on the deal; tech dd waits for the data room', async ({
   await expect(page.getByText('150.000.000 VND').first()).toBeVisible()
   await page.getByRole('button', { name: 'Lập khoản phí' }).click()
   await expect(page.getByText('Chưa xuất hóa đơn')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Chứng từ ký và đóng' }),
+  ).toBeVisible()
+  await expect(page.getByText(/Chưa có chứng từ/)).toBeVisible()
   await noHorizontalScroll(page)
 
   await loginAs(page, 'tech')
@@ -101,6 +136,13 @@ test('finance opens fees on the deal; tech dd waits for the data room', async ({
     page.getByText('Phòng dữ liệu chưa mở nên chưa bắt đầu thẩm định.'),
   ).toBeVisible()
   await expect(page.getByText('Phí, hóa đơn và thanh toán')).toHaveCount(0)
+  await page.goto('/#/rooms')
+  await expect(
+    page.getByText(/Chỉ hiện phòng dữ liệu của seller/),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Tạo phòng dữ liệu' }),
+  ).toHaveCount(0)
 })
 
 test('admin opens the deal detail instead of the disclosure screen', async ({
