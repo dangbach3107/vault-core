@@ -1,19 +1,20 @@
 import type { Company, Fact } from '../../api/workspace'
 import type { components } from '../../api/generated/schema'
-import { formatVnd } from '../../lib/money'
+import { formatMoney, type Currency } from '../../lib/money'
 import { fields, optionLabels } from './fields'
 
-/** Review paths: a top-level fact key, or financials.<year>.revenue_vnd|ebitda_vnd. */
+/** Review paths: a top-level fact key, or financials.<year>.revenue|ebitda. */
 export function fieldLabel(path: string) {
   const [first, year, metric] = path.split('.')
   if (first === 'financials')
-    return `${metric === 'ebitda_vnd' ? 'EBITDA' : 'Doanh thu'} ${year}`
+    return `${metric === 'ebitda' ? 'EBITDA' : 'Doanh thu'} ${year}`
   return fields.find((field) => field.key === first)?.label || path
 }
 
-export function valueText(path: string, value: unknown) {
+export function valueText(path: string, value: unknown, currency: string) {
   if (value === null || value === undefined || value === '') return 'Chưa có'
-  if (path.startsWith('financials.')) return formatVnd(String(value))
+  if (path.startsWith('financials.') || path === 'expected_valuation')
+    return formatMoney(String(value), currency as Currency)
   return optionLabels[String(value)] || String(value)
 }
 
@@ -24,7 +25,7 @@ export function reviewableFacts(company: Company) {
     fact: (profile[field.key] || { value: null }) as Fact,
   }))
   const money = (company.profile.financials || []).flatMap((row) =>
-    (['revenue_vnd', 'ebitda_vnd'] as const).map((metric) => ({
+    (['revenue', 'ebitda'] as const).map((metric) => ({
       path: `financials.${row.year}.${metric}`,
       fact: (row[metric] || { value: null }) as Fact,
     })),

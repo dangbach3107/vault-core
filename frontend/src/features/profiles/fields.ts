@@ -21,11 +21,18 @@ export const optionLabels: Record<string, string> = {
   PRIMARY: 'Phát hành mới',
   SECONDARY: 'Chuyển nhượng',
   MIXED: 'Kết hợp',
+  VN: 'Việt Nam',
+  JP: 'Nhật Bản',
+  EV: 'EV (giá trị doanh nghiệp)',
+  EQUITY: 'Equity (giá trị vốn chủ)',
 }
+export const currencyLabels = { VND: 'VND (đồng)', JPY: 'JPY (yên Nhật)' }
 export type FieldDefinition = {
   key: FieldName
   label: string
   kind?: 'number' | 'money' | 'long'
+  /** An amount in the profile's reporting currency (shown with VND/JPY). */
+  amount?: boolean
   options?: string[]
   min?: number
   max?: number
@@ -48,8 +55,13 @@ export const fields: FieldDefinition[] = [
     options: ['SOFTWARE', 'MANUFACTURING', 'SERVICES', 'OTHER'],
   },
   {
+    key: 'country',
+    label: 'Quốc gia',
+    options: ['VN', 'JP', 'OTHER'],
+  },
+  {
     key: 'region',
-    label: 'Vùng hoạt động',
+    label: 'Vùng tại Việt Nam',
     options: ['NORTH', 'CENTRAL', 'SOUTH'],
   },
   { key: 'address', label: 'Địa chỉ', kind: 'long' },
@@ -77,6 +89,18 @@ export const fields: FieldDefinition[] = [
     min: 0,
     max: 100,
   },
+  {
+    key: 'expected_valuation',
+    label: 'Giá trị kỳ vọng (không phải doanh thu)',
+    kind: 'money',
+    amount: true,
+    min: 0,
+  },
+  {
+    key: 'valuation_basis',
+    label: 'Cơ sở giá trị kỳ vọng',
+    options: ['EV', 'EQUITY'],
+  },
   { key: 'funds_destination', label: 'Mục đích sử dụng vốn', kind: 'long' },
   { key: 'objectives', label: 'Mục tiêu thương vụ', kind: 'long' },
   {
@@ -103,10 +127,12 @@ export function blankFact(): Omit<Fact, 'value'> & { value: null } {
 export function blankProfile(): Profile {
   return {
     company_name: blankFact(),
+    currency: 'VND',
     financials: Array.from({ length: 3 }, (_, i) => ({
       year: new Date().getFullYear() - 1 - i,
-      revenue_vnd: blankFact(),
-      ebitda_vnd: blankFact(),
+      period_end: null,
+      revenue: blankFact(),
+      ebitda: blankFact(),
     })),
   }
 }

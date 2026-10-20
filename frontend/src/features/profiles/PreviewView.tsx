@@ -1,15 +1,16 @@
 import type { Fact, Preview } from '../../api/workspace'
-import { formatVnd } from '../../lib/money'
+import { formatMoney, type Currency } from '../../lib/money'
 import { fields, issueLabels, optionLabels, statusLabels } from './fields'
 
 export function FactView({
   name,
   fact,
-  money = false,
+  currency,
 }: {
   name: string
   fact: Fact
-  money?: boolean
+  /** Set for amounts: formats the value with this currency code. */
+  currency?: Currency
 }) {
   return (
     <div className="fact-view">
@@ -17,8 +18,8 @@ export function FactView({
       <dd>
         {fact.value == null
           ? 'Chưa cung cấp'
-          : money
-            ? formatVnd(String(fact.value))
+          : currency
+            ? formatMoney(String(fact.value), currency)
             : optionLabels[String(fact.value)] || String(fact.value)}{' '}
         <span className={`badge ${fact.verification || 'SELF_DECLARED'}`}>
           {fact.value == null
@@ -65,8 +66,9 @@ export function PreviewBody({
           <dl className="preview-grid">
             {Object.entries({
               Ngành: optionLabels[data.sector || ''],
+              'Quốc gia': optionLabels[data.country || ''],
               Vùng: optionLabels[data.region || ''],
-              'Doanh thu': data.revenue_band_vnd,
+              'Doanh thu': data.revenue_band,
               'Nhân sự': data.employee_band,
               'Giao dịch': optionLabels[data.deal_type || ''],
             }).map(([name, value]) => (
@@ -84,33 +86,44 @@ export function PreviewBody({
       ) : (
         <>
           <dl className="preview-grid">
-            {Object.entries(data.facts).map(([key, fact]) => (
-              <FactView
-                key={key}
-                name={fields.find((field) => field.key === key)?.label || key}
-                fact={fact as Fact}
-              />
-            ))}
+            {Object.entries(data.facts).map(([key, fact]) => {
+              const field = fields.find((item) => item.key === key)
+              return (
+                <FactView
+                  key={key}
+                  name={field?.label || key}
+                  fact={fact as Fact}
+                  currency={
+                    field?.amount && 'currency' in data
+                      ? data.currency
+                      : undefined
+                  }
+                />
+              )
+            })}
           </dl>
           {'financials' in data && (
             <>
-              <h2>Tài chính (VND)</h2>
+              <h2>Tài chính ({data.currency})</h2>
               {data.financials.length === 0 && (
                 <p>Chưa cung cấp năm tài chính.</p>
               )}
               {data.financials.map((row) => (
                 <section key={row.year}>
-                  <h3>{row.year}</h3>
+                  <h3>
+                    {row.year}
+                    {row.period_end ? ` · kỳ kết thúc ${row.period_end}` : ''}
+                  </h3>
                   <dl className="preview-grid">
                     <FactView
                       name="Doanh thu"
-                      money
-                      fact={(row.revenue_vnd || {}) as Fact}
+                      currency={data.currency}
+                      fact={(row.revenue || {}) as Fact}
                     />
                     <FactView
                       name="EBITDA"
-                      money
-                      fact={(row.ebitda_vnd || {}) as Fact}
+                      currency={data.currency}
+                      fact={(row.ebitda || {}) as Fact}
                     />
                   </dl>
                 </section>

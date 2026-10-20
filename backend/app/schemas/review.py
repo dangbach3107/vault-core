@@ -8,7 +8,7 @@ from backend.app.schemas.company import StrictModel
 
 
 class ReviewRequestInput(StrictModel):
-    # A top-level fact key (e.g. "employees") or "financials.<year>.revenue_vnd|ebitda_vnd".
+    # A top-level fact key (e.g. "employees") or "financials.<year>.revenue|ebitda".
     field: str = Field(min_length=1, max_length=80)
     source: str = Field(min_length=1, max_length=500)
     source_date: date
@@ -41,6 +41,7 @@ class ReviewResponse(StrictModel):
     company_id: UUID
     company_alias: str
     company_name: str
+    currency: str  # the profile's reporting currency, for financial values
     field: str
     value: Any
     source: str

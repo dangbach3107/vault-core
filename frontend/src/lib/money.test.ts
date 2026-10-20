@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { formatVnd, formatVndShort } from './money'
+import { formatMoney, formatVnd, formatVndShort } from './money'
 
 test('formats exact VND without floats', () => {
   expect(formatVnd('42000000000')).toBe('42.000.000.000 VND')
@@ -16,4 +16,9 @@ test('formats short VND', () => {
   expect(formatVndShort('90000000')).toBe('90,0 triệu VND')
   expect(formatVndShort('1500000000000')).toBe('1.500,0 tỷ VND')
   expect(formatVndShort('500000')).toBe('500.000 VND')
+})
+
+test('formats JPY with the same exact grouping', () => {
+  expect(formatMoney('450000000', 'JPY')).toBe('450.000.000 JPY')
+  expect(formatMoney(null, 'JPY')).toBe('Chưa có')
 })

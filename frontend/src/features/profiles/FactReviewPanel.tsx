@@ -109,7 +109,9 @@ export default function FactReviewPanel({
           {facts.map(({ path, fact }) => (
             <tr key={path}>
               <td>{fieldLabel(path)}</td>
-              <td>{valueText(path, fact.value)}</td>
+              <td>
+                {valueText(path, fact.value, company.profile.currency || 'VND')}
+              </td>
               <td>
                 {pending.has(path)
                   ? 'Chờ duyệt'
@@ -215,7 +217,8 @@ export default function FactReviewPanel({
         <ul className="grant-files">
           {reviews.map((row) => (
             <li key={row.id}>
-              {fieldLabel(row.field)} · {valueText(row.field, row.value)} ·{' '}
+              {fieldLabel(row.field)} ·{' '}
+              {valueText(row.field, row.value, row.currency)} ·{' '}
               {REVIEW_STATUS[row.status]}
               {row.decided_by ? ` bởi ${row.decided_by}` : ''}
               {row.reason ? ` · ${row.reason}` : ''} · gửi bởi{' '}

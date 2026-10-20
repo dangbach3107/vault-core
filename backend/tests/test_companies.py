@@ -20,7 +20,7 @@ def draft():
         "region": {"value": "NORTH", "notes": "Must never disclose"},
         "sector": {"value": "SOFTWARE"},
         "employees": {"value": 120},
-        "financials": [{"year": 2025, "revenue_vnd": {"value": "25000000000.01"}, "ebitda_vnd": {"value": "-1000.50"}}],
+        "financials": [{"year": 2025, "revenue": {"value": "25000000000.01"}, "ebitda": {"value": "-1000.50"}}],
     }
 
 
@@ -41,8 +41,8 @@ def test_persistence_edit_and_stale_revision(client):
     path = f'/api/v1/companies/{company["id"]}'
     loaded = client.get(path).json()
     assert loaded == company
-    assert loaded["profile"]["financials"][0]["revenue_vnd"]["value"] == "25000000000.01"
-    assert loaded["profile"]["financials"][0]["ebitda_vnd"]["value"] == "-1000.50"
+    assert loaded["profile"]["financials"][0]["revenue"]["value"] == "25000000000.01"
+    assert loaded["profile"]["financials"][0]["ebitda"]["value"] == "-1000.50"
     loaded["profile"]["company_name"]["value"] = "Doanh nghiệp đã sửa"
     update = {"expected_revision": 1, "profile": loaded["profile"]}
     assert client.put(path, json=update).json()["revision"] == 2
@@ -123,8 +123,8 @@ def test_preview_backend_allowlist_and_missing_vs_zero(client):
     path = f'/api/v1/companies/{company["id"]}/preview'
     anonymous = client.get(f"{path}/1")
     assert anonymous.status_code == 200, anonymous.text
-    assert set(anonymous.json()) == {"layer", "alias", "sector", "region", "revenue_band_vnd", "employee_band", "deal_type", "notice"}
-    assert anonymous.json()["revenue_band_vnd"] == "20–dưới 50 tỷ"
+    assert set(anonymous.json()) == {"layer", "alias", "sector", "region", "country", "revenue_band", "employee_band", "deal_type", "notice"}
+    assert anonymous.json()["revenue_band"] == "20–dưới 50 tỷ VND"
     for private in ["Giả lập", "SYNTH-010101", "Bí mật", "Secret", "Sensitive", "Must never", "25000000000", "notes", "company_name"]:
         assert private not in anonymous.text
     identified = client.get(f"{path}/2").json()
@@ -133,7 +133,7 @@ def test_preview_backend_allowlist_and_missing_vs_zero(client):
     assert client.get(f"{path}/3").json()["facts"]["shareholders"]["value"] == "Sensitive shareholder"
     blank = create(client, {"company_name": {"value": "Blank"}, "employees": {"value": 0}})
     preview = client.get(f'/api/v1/companies/{blank["id"]}/preview/1').json()
-    assert preview["revenue_band_vnd"] is None
+    assert preview["revenue_band"] is None
     assert preview["employee_band"] == "Dưới 50"
     assert client.get(f"{path}/4").status_code == 422
     assert client.get(f"/api/v1/companies/{uuid4()}").status_code == 404
@@ -146,15 +146,39 @@ def test_preview_backend_allowlist_and_missing_vs_zero(client):
     {"founded_year": {"value": date.today().year + 1}},
     {"sector": {"value": "identifying free text"}},
     {"financials": [{"year": 2025}, {"year": 2025}]},
-    {"financials": [{"year": 2025, "revenue_vnd": {"value": "-1"}}]},
-    {"financials": [{"year": 2025, "revenue_vnd": {"value": "1.001"}}]},
+    {"financials": [{"year": 2025, "revenue": {"value": "-1"}}]},
+    {"financials": [{"year": 2025, "revenue": {"value": "1.001"}}]},
     {"company_name": {"value": "Unsupported", "verification": "DOCUMENT_VERIFIED"}},
     {"is_audited": True},
+    {"currency": "USD"},
+    {"country": {"value": "JP"}},  # draft() has a Vietnamese region
+    {"expected_valuation": {"value": "100000000000"}},  # no EV/Equity basis
+    {"financials": [{"year": 2025, "period_end": "2027-03-31"}]},
+    {"financials": [{"year": date.today().year, "period_end": date.today().replace(month=12, day=31).isoformat()}]} if date.today().month < 12 else {"is_audited": True},
 ])
 def test_validation(client, patch):
     body = draft() | patch
     assert client.post("/api/v1/companies", json=body).status_code == 422
     assert client.get("/api/v1/companies?q=SYNTH-010101").json() == []
+
+
+def test_japanese_profile_uses_jpy_bands_and_fiscal_period(client):
+    body = draft() | {
+        "country": {"value": "JP"}, "region": {"value": None}, "currency": "JPY",
+        "expected_valuation": {"value": "2500000000"}, "valuation_basis": {"value": "EQUITY"},
+        "financials": [{"year": 2024, "period_end": "2025-03-31", "revenue": {"value": "450000000"}}],
+    }
+    company = create(client, body)
+    assert company["profile"]["currency"] == "JPY"
+    assert company["profile"]["financials"][0]["period_end"] == "2025-03-31"
+    path = f'/api/v1/companies/{company["id"]}/preview'
+    teaser = client.get(f"{path}/1").json()
+    assert teaser["country"] == "JP" and teaser["revenue_band"] == "300 triệu–dưới 1 tỷ JPY"
+    identified = client.get(f"{path}/2").json()
+    assert identified["currency"] == "JPY" and "currency" not in identified["facts"]
+    assert identified["facts"]["valuation_basis"]["value"] == "EQUITY"
+    summary = next(row for row in client.get("/api/v1/companies?limit=200").json() if row["id"] == company["id"])
+    assert summary["currency"] == "JPY" and summary["country"] == "JP" and summary["revenue_band"] == "300 triệu–dưới 1 tỷ JPY"
 
 
 def review(client, company_id, field, requester="seller", **extra):
@@ -226,17 +250,17 @@ def test_review_rejection_self_review_and_stale_value(client):
     assert rejected.json()["status"] == "REJECTED" and rejected.json()["reason"] == "Thiếu chứng từ"
     own = review(client, company["id"], "sector", requester="admin").json()
     assert decide(client, own["id"], reviewer="admin").status_code == 409  # requester cannot decide
-    stale = review(client, company["id"], "financials.2025.revenue_vnd").json()
+    stale = review(client, company["id"], "financials.2025.revenue").json()
     assert stale["value"] == "25000000000.01"
     seller = auth_headers(client, "seller")
     profile = client.get(path, headers=seller).json()
     update = {"expected_revision": profile["revision"], "profile": deepcopy(profile["profile"])}
-    update["profile"]["financials"][0]["revenue_vnd"]["value"] = "26000000000"
+    update["profile"]["financials"][0]["revenue"]["value"] = "26000000000"
     assert client.put(path, json=update, headers=seller).status_code == 200
     assert decide(client, stale["id"]).status_code == 409
     other_seller = auth_headers(client, "seller2")
     assert client.get(path + "/reviews", headers=other_seller).status_code == 404
-    assert [row["field"] for row in client.get(path + "/reviews", headers=seller).json()] == ["financials.2025.revenue_vnd", "sector", "tax_id"]
+    assert [row["field"] for row in client.get(path + "/reviews", headers=seller).json()] == ["financials.2025.revenue", "sector", "tax_id"]
 
 
 def test_disabled_preview_does_not_enable_business_routes():

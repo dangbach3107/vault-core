@@ -6,6 +6,7 @@
 | 1.1 | 2026-10-20 | Tech DD chỉ thấy phòng dữ liệu của deal đang thẩm định; Finance đọc chứng từ closing theo deal |
 | 1.2 | 2026-10-20 | Form riêng cho nhu cầu mua, NDA, LOI, đề nghị chính thức, bàn giao; NDA/LOI giới hạn thời hạn quyền |
 | 1.3 | 2026-10-20 | Quy trình duyệt dữ kiện: gửi duyệt kèm bằng chứng, Legal/Admin quyết định, người gửi không tự duyệt |
+| 1.4 | 2026-10-20 | Quốc gia, đơn vị tiền VND/JPY, kỳ tài chính, giá trị kỳ vọng EV/Equity tách khỏi doanh thu |
 
 Tài liệu này nói rõ cái gì đã chạy được, cái gì chỉ ghi nhận, cái gì chưa làm. Khi phạm vi đổi, tăng phiên bản và ghi một dòng vào bảng trên.
 
@@ -22,6 +23,7 @@ Tài liệu này nói rõ cái gì đã chạy được, cái gì chỉ ghi nh�
 | Teaser (Lớp 1) | Buyer chỉ xem sau khi Seller duyệt Teaser trong deal. |
 | Lớp 2, Lớp 3 | Mở khi có căn cứ (NDA cho Lớp 2, LOI sơ bộ cho Lớp 3) và Seller/Legal cấp quyền còn hiệu lực. Lớp 3 là "Tài liệu hạn chế theo quyền", không phải "đầy đủ". |
 | Quyền tài liệu | Theo người, deal, từng file và phiên bản, căn cứ, xem hoặc tải, ngày hết hạn, thu hồi. Phiên bản mới không tự mở cho Buyer. Có nhật ký xem/tải. |
+| Quốc gia & tiền | Hồ sơ có quốc gia (Việt Nam/Nhật/khác), một đơn vị tiền (VND hoặc JPY), kỳ tài chính (ngày kết thúc kỳ), giá trị kỳ vọng có cơ sở EV/Equity, tách khỏi doanh thu. |
 | Phòng dữ liệu | Thư mục, phiên bản, xem trước PDF/ảnh/văn bản. Word/Excel chỉ tải về. |
 | Tech DD | Finding (mức độ, mô tả, khắc phục, ảnh hưởng), Seller phản hồi, Tech DD đóng hoặc chấp nhận rủi ro; ký xác nhận riêng, bị chặn khi còn finding mở. |
 | Finance | Khoản phí → hóa đơn → từng lần thanh toán; tự tính chưa xuất hóa đơn / đã xuất / thanh toán một phần / đủ / quá hạn. Phí thành công chỉ sau Closing. |
@@ -39,7 +41,7 @@ Xác nhận hồ sơ Seller, ghép Buyer–Seller, đề nghị biết danh tín
 
 ### Chưa làm
 
-- Quốc gia/đơn vị tiền tệ (JPY), kỳ tài chính cho hồ sơ doanh nghiệp. (EV/Equity đã có trong LOI/đề nghị.)
+- Quy đổi tiền giữa VND và JPY (hệ thống không quy đổi; mỗi hồ sơ một đơn vị tiền). Tiền trong deal vẫn là VND.
 - Ký điện tử, quét virus, watermark, VDR bên ngoài, chặn chụp màn hình. "Chỉ xem" nghĩa là ứng dụng không cấp nút tải; không ngăn được người xem tự lưu.
 - Đăng nhập thật (SSO/MFA), quản lý tài khoản.
 - Kiểm tra nguy cơ nhận diện Teaser tự động. Teaser vẫn cần người duyệt đọc trước khi chia sẻ.

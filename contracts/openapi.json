@@ -105,6 +105,16 @@
             "title": "Alias",
             "type": "string"
           },
+          "country": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Country"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "deal_type": {
             "anyOf": [
               {
@@ -146,7 +156,7 @@
               }
             ]
           },
-          "revenue_band_vnd": {
+          "revenue_band": {
             "anyOf": [
               {
                 "type": "string"
@@ -155,7 +165,7 @@
                 "type": "null"
               }
             ],
-            "title": "Revenue Band Vnd"
+            "title": "Revenue Band"
           },
           "sector": {
             "anyOf": [
@@ -171,8 +181,9 @@
         "required": [
           "alias",
           "sector",
+          "country",
           "region",
-          "revenue_band_vnd",
+          "revenue_band",
           "employee_band",
           "deal_type"
         ],
@@ -437,6 +448,18 @@
           "company_name": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"
           },
+          "country": {
+            "$ref": "#/components/schemas/Fact_Country_"
+          },
+          "currency": {
+            "default": "VND",
+            "enum": [
+              "VND",
+              "JPY"
+            ],
+            "title": "Currency",
+            "type": "string"
+          },
           "customer_groups": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
           },
@@ -451,6 +474,9 @@
           },
           "employees": {
             "$ref": "#/components/schemas/Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_10000000_____"
+          },
+          "expected_valuation": {
+            "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"
           },
           "financials": {
             "items": {
@@ -492,6 +518,9 @@
           },
           "technology": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
+          },
+          "valuation_basis": {
+            "$ref": "#/components/schemas/Fact_ValuationBasis_"
           }
         },
         "required": [
@@ -509,6 +538,18 @@
           "company_name": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"
           },
+          "country": {
+            "$ref": "#/components/schemas/Fact_Country_"
+          },
+          "currency": {
+            "default": "VND",
+            "enum": [
+              "VND",
+              "JPY"
+            ],
+            "title": "Currency",
+            "type": "string"
+          },
           "customer_groups": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
           },
@@ -523,6 +564,9 @@
           },
           "employees": {
             "$ref": "#/components/schemas/Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_10000000_____"
+          },
+          "expected_valuation": {
+            "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"
           },
           "financials": {
             "items": {
@@ -564,6 +608,9 @@
           },
           "technology": {
             "$ref": "#/components/schemas/Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"
+          },
+          "valuation_basis": {
+            "$ref": "#/components/schemas/Fact_ValuationBasis_"
           }
         },
         "required": [
@@ -623,6 +670,25 @@
         "properties": {
           "alias": {
             "title": "Alias",
+            "type": "string"
+          },
+          "country": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Country"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "default": "VND",
+            "enum": [
+              "VND",
+              "JPY"
+            ],
+            "title": "Currency",
             "type": "string"
           },
           "deal_type": {
@@ -758,6 +824,15 @@
         ],
         "title": "CompanyUpdate",
         "type": "object"
+      },
+      "Country": {
+        "enum": [
+          "VN",
+          "JP",
+          "OTHER"
+        ],
+        "title": "Country",
+        "type": "string"
       },
       "DealActionInput": {
         "additionalProperties": false,
@@ -2007,6 +2082,79 @@
         "title": "Fact[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=8), MaxLen(max_length=2000), _PydanticGeneralMetadata(pattern='https?://\\\\S+')])]]",
         "type": "object"
       },
+      "Fact_Country_": {
+        "additionalProperties": false,
+        "properties": {
+          "entered_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Entered By",
+            "type": "string"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/Issue",
+            "default": "NONE"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Reviewed By",
+            "type": "string"
+          },
+          "reviewed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed On"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "source_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Date"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Country"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "default": "SELF_DECLARED"
+          }
+        },
+        "title": "Fact[Country]",
+        "type": "object"
+      },
       "Fact_DealType_": {
         "additionalProperties": false,
         "properties": {
@@ -2309,6 +2457,79 @@
         "title": "Fact[Union[Annotated[str, FieldInfo(annotation=NoneType, required=True, metadata=[MinLen(min_length=1), MaxLen(max_length=2000)])], Decimal, int]]",
         "type": "object"
       },
+      "Fact_ValuationBasis_": {
+        "additionalProperties": false,
+        "properties": {
+          "entered_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Entered By",
+            "type": "string"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/Issue",
+            "default": "NONE"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Reviewed By",
+            "type": "string"
+          },
+          "reviewed_on": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed On"
+          },
+          "source": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Source",
+            "type": "string"
+          },
+          "source_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Date"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ValuationBasis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification": {
+            "$ref": "#/components/schemas/Verification",
+            "default": "SELF_DECLARED"
+          }
+        },
+        "title": "Fact[ValuationBasis]",
+        "type": "object"
+      },
       "FeeInput": {
         "additionalProperties": false,
         "properties": {
@@ -2357,10 +2578,22 @@
       "FinancialYear-Input": {
         "additionalProperties": false,
         "properties": {
-          "ebitda_vnd": {
+          "ebitda": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"
           },
-          "revenue_vnd": {
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "revenue": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"
           },
           "year": {
@@ -2379,10 +2612,22 @@
       "FinancialYear-Output": {
         "additionalProperties": false,
         "properties": {
-          "ebitda_vnd": {
+          "ebitda": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"
           },
-          "revenue_vnd": {
+          "period_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "revenue": {
             "$ref": "#/components/schemas/Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"
           },
           "year": {
@@ -2595,6 +2840,14 @@
       "IdentifiedPreview": {
         "additionalProperties": false,
         "properties": {
+          "currency": {
+            "enum": [
+              "VND",
+              "JPY"
+            ],
+            "title": "Currency",
+            "type": "string"
+          },
           "facts": {
             "additionalProperties": {
               "$ref": "#/components/schemas/Fact_Union_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000______Decimal__int__"
@@ -2622,6 +2875,7 @@
         },
         "required": [
           "facts",
+          "currency",
           "financials"
         ],
         "title": "IdentifiedPreview",
@@ -3038,6 +3292,10 @@
             "title": "Company Name",
             "type": "string"
           },
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
           "decided_at": {
             "anyOf": [
               {
@@ -3135,6 +3393,7 @@
           "company_id",
           "company_alias",
           "company_name",
+          "currency",
           "field",
           "value",
           "source",
@@ -3374,6 +3633,14 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "ValuationBasis": {
+        "enum": [
+          "EV",
+          "EQUITY"
+        ],
+        "title": "ValuationBasis",
+        "type": "string"
       },
       "Verification": {
         "enum": [

@@ -670,6 +670,7 @@ export interface components {
         AnonymousPreview: {
             /** Alias */
             alias: string;
+            country: components["schemas"]["Country"] | null;
             deal_type: components["schemas"]["DealType"] | null;
             /** Employee Band */
             employee_band: string | null;
@@ -684,8 +685,8 @@ export interface components {
              */
             notice: string;
             region: components["schemas"]["Region"] | null;
-            /** Revenue Band Vnd */
-            revenue_band_vnd: string | null;
+            /** Revenue Band */
+            revenue_band: string | null;
             sector: components["schemas"]["Sector"] | null;
         };
         /** ApiError */
@@ -782,11 +783,19 @@ export interface components {
         "CompanyInput-Input": {
             address?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             company_name: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            country?: components["schemas"]["Fact_Country_"];
+            /**
+             * Currency
+             * @default VND
+             * @enum {string}
+             */
+            currency: "VND" | "JPY";
             customer_groups?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             deal_type?: components["schemas"]["Fact_DealType_"];
             decision_maker?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             description?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             employees?: components["schemas"]["Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_10000000_____"];
+            expected_valuation?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"];
             /** Financials */
             financials?: components["schemas"]["FinancialYear-Input"][];
             founded_year?: components["schemas"]["Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_1800___Le_le_2100_____"];
@@ -800,16 +809,25 @@ export interface components {
             stake_percent?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Input"];
             tax_id?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_3___MaxLen_max_length_30_____"];
             technology?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
+            valuation_basis?: components["schemas"]["Fact_ValuationBasis_"];
         };
         /** CompanyInput */
         "CompanyInput-Output": {
             address?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             company_name: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_200_____"];
+            country?: components["schemas"]["Fact_Country_"];
+            /**
+             * Currency
+             * @default VND
+             * @enum {string}
+             */
+            currency: "VND" | "JPY";
             customer_groups?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             deal_type?: components["schemas"]["Fact_DealType_"];
             decision_maker?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             description?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
             employees?: components["schemas"]["Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_10000000_____"];
+            expected_valuation?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"];
             /** Financials */
             financials?: components["schemas"]["FinancialYear-Output"][];
             founded_year?: components["schemas"]["Fact_Annotated_int__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_1800___Le_le_2100_____"];
@@ -823,6 +841,7 @@ export interface components {
             stake_percent?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0___Le_le_100____PydanticGeneralMetadata_decimal_places_2_____-Output"];
             tax_id?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_3___MaxLen_max_length_30_____"];
             technology?: components["schemas"]["Fact_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000_____"];
+            valuation_basis?: components["schemas"]["Fact_ValuationBasis_"];
         };
         /** CompanyResponse */
         CompanyResponse: {
@@ -853,6 +872,13 @@ export interface components {
         CompanySummary: {
             /** Alias */
             alias: string;
+            country?: components["schemas"]["Country"] | null;
+            /**
+             * Currency
+             * @default VND
+             * @enum {string}
+             */
+            currency: "VND" | "JPY";
             deal_type?: components["schemas"]["DealType"] | null;
             /** Employee Band */
             employee_band?: string | null;
@@ -895,6 +921,11 @@ export interface components {
             expected_revision: number;
             profile: components["schemas"]["CompanyInput-Input"];
         };
+        /**
+         * Country
+         * @enum {string}
+         */
+        Country: "VN" | "JP" | "OTHER";
         /** DealActionInput */
         DealActionInput: {
             buyer_request?: components["schemas"]["BuyerRequestForm"] | null;
@@ -1427,6 +1458,38 @@ export interface components {
             /** @default SELF_DECLARED */
             verification: components["schemas"]["Verification"];
         };
+        /** Fact[Country] */
+        Fact_Country_: {
+            /**
+             * Entered By
+             * @default
+             */
+            entered_by: string;
+            /** @default NONE */
+            issue: components["schemas"]["Issue"];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Reviewed By
+             * @default
+             */
+            reviewed_by: string;
+            /** Reviewed On */
+            reviewed_on?: string | null;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /** Source Date */
+            source_date?: string | null;
+            value?: components["schemas"]["Country"] | null;
+            /** @default SELF_DECLARED */
+            verification: components["schemas"]["Verification"];
+        };
         /** Fact[DealType] */
         Fact_DealType_: {
             /**
@@ -1556,6 +1619,38 @@ export interface components {
             /** @default SELF_DECLARED */
             verification: components["schemas"]["Verification"];
         };
+        /** Fact[ValuationBasis] */
+        Fact_ValuationBasis_: {
+            /**
+             * Entered By
+             * @default
+             */
+            entered_by: string;
+            /** @default NONE */
+            issue: components["schemas"]["Issue"];
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Reviewed By
+             * @default
+             */
+            reviewed_by: string;
+            /** Reviewed On */
+            reviewed_on?: string | null;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /** Source Date */
+            source_date?: string | null;
+            value?: components["schemas"]["ValuationBasis"] | null;
+            /** @default SELF_DECLARED */
+            verification: components["schemas"]["Verification"];
+        };
         /** FeeInput */
         FeeInput: {
             /** Amount Vnd */
@@ -1578,15 +1673,19 @@ export interface components {
         };
         /** FinancialYear */
         "FinancialYear-Input": {
-            ebitda_vnd?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"];
-            revenue_vnd?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"];
+            ebitda?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"];
+            /** Period End */
+            period_end?: string | null;
+            revenue?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Input"];
             /** Year */
             year: number;
         };
         /** FinancialYear */
         "FinancialYear-Output": {
-            ebitda_vnd?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"];
-            revenue_vnd?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"];
+            ebitda?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata___PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"];
+            /** Period End */
+            period_end?: string | null;
+            revenue?: components["schemas"]["Fact_Annotated_Decimal__FieldInfo_annotation_NoneType__required_True__metadata__Ge_ge_0____PydanticGeneralMetadata_max_digits_18__decimal_places_2_____-Output"];
             /** Year */
             year: number;
         };
@@ -1671,6 +1770,11 @@ export interface components {
         };
         /** IdentifiedPreview */
         IdentifiedPreview: {
+            /**
+             * Currency
+             * @enum {string}
+             */
+            currency: "VND" | "JPY";
             /** Facts */
             facts: {
                 [key: string]: components["schemas"]["Fact_Union_Annotated_str__FieldInfo_annotation_NoneType__required_True__metadata__MinLen_min_length_1___MaxLen_max_length_2000______Decimal__int__"];
@@ -1864,6 +1968,8 @@ export interface components {
             company_id: string;
             /** Company Name */
             company_name: string;
+            /** Currency */
+            currency: string;
             /** Decided At */
             decided_at: string | null;
             /** Decided By */
@@ -2001,6 +2107,11 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /**
+         * ValuationBasis
+         * @enum {string}
+         */
+        ValuationBasis: "EV" | "EQUITY";
         /**
          * Verification
          * @enum {string}
