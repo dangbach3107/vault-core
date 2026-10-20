@@ -28,7 +28,8 @@ const roleModules: Record<
   SELLER: [
     {
       title: 'Hồ sơ doanh nghiệp',
-      description: 'Pháp nhân, sở hữu, dữ kiện tự khai và nhãn xác minh.',
+      description:
+        'Pháp nhân, sở hữu, dữ kiện tự khai; gửi dữ kiện đi duyệt kèm bằng chứng.',
       href: '#/companies',
     },
     {
@@ -60,8 +61,14 @@ const roleModules: Record<
     },
     {
       title: 'Hồ sơ doanh nghiệp',
-      description: 'Rà soát chứng từ và gắn nhãn xác minh cho từng dữ kiện.',
+      description: 'Quản lý hồ sơ seller và gửi dữ kiện đi duyệt.',
       href: '#/companies',
+    },
+    {
+      title: 'Duyệt dữ kiện',
+      description:
+        'Đối chiếu bằng chứng và gắn nhãn xác minh cho dữ kiện người khác gửi.',
+      href: '#/reviews',
     },
     {
       title: 'Phòng dữ liệu',
@@ -80,6 +87,12 @@ const roleModules: Record<
       description:
         'Duyệt Lớp 1/2/3, tài liệu closing và chuyển dữ liệu ra nước ngoài.',
       href: '#/disclosures',
+    },
+    {
+      title: 'Duyệt dữ kiện',
+      description:
+        'Đối chiếu bằng chứng và gắn nhãn xác minh cho từng dữ kiện.',
+      href: '#/reviews',
     },
     {
       title: 'Phòng dữ liệu',

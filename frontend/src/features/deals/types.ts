@@ -3,6 +3,10 @@ import type { Role } from '../auth/roles'
 
 export type Catalog = components['schemas']['DealCatalog']
 export type DealDocument = components['schemas']['DealDocument']
+export type BuyerRequestForm = components['schemas']['BuyerRequestForm']
+export type NdaForm = components['schemas']['NdaForm']
+export type OfferForm = components['schemas']['OfferForm']
+export type HandoffForm = components['schemas']['HandoffForm']
 
 export type EvidenceRecord = {
   by: string
@@ -113,7 +117,11 @@ export type DealState = {
   closing: { status: string; closed_at?: string } | null
   records?: Record<string, EvidenceRecord>
   seller_profile?: { company_id: string | null }
-  buyer_request?: (EvidenceRecord & { summary: string }) | null
+  buyer_request?: (EvidenceRecord & BuyerRequestForm) | null
+  nda?: (EvidenceRecord & NdaForm) | null
+  indicative_loi?: (EvidenceRecord & Partial<OfferForm>) | null
+  definitive_offer?: (EvidenceRecord & Partial<OfferForm>) | null
+  handoff?: (EvidenceRecord & Partial<HandoffForm>) | null
   tech_dd?: {
     findings: Finding[]
     signed_off_at: string | null

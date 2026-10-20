@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { request, type Room, type Summary } from '../../api/workspace'
+import { getAuthSession } from '../../api/config'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
+import { canEditRooms, canOpenCompanies } from './permissions'
 
 function CompanyMatches({
   query,
@@ -108,14 +110,24 @@ export default function RoomList({ companyId }: { companyId?: string }) {
             Tài liệu theo thương vụ · Sáu nhóm thư mục · Giữ lại các phiên bản
           </p>
         </div>
-        <button onClick={() => setCreating(!creating)}>
-          {creating ? 'Đóng form tạo phòng' : 'Tạo phòng dữ liệu'}
-        </button>
+        {canEditRooms() && (
+          <button onClick={() => setCreating(!creating)}>
+            {creating ? 'Đóng form tạo phòng' : 'Tạo phòng dữ liệu'}
+          </button>
+        )}
       </div>
+      {getAuthSession()?.user.role === 'TECH_DD' && (
+        <p className="notice">
+          Chỉ hiện phòng dữ liệu của seller trong deal đã mở phòng dữ liệu và
+          chưa đóng.
+        </p>
+      )}
       {companyId && (
         <p>
           Đang lọc theo doanh nghiệp. <a href="#/rooms">Xem tất cả phòng</a> ·{' '}
-          <a href={`#/companies/${companyId}`}>Về hồ sơ</a>
+          {canOpenCompanies() && (
+            <a href={`#/companies/${companyId}`}>Về hồ sơ</a>
+          )}
         </p>
       )}
       {creating && (

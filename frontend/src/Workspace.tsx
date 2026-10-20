@@ -10,6 +10,7 @@ import DealList from './features/deals/DealList'
 import DealDetail from './features/deals/DealDetail'
 import VaultHome from './features/vault/VaultHome'
 import AccessWorkspace from './features/access/AccessWorkspace'
+import ReviewQueue from './features/reviews/ReviewQueue'
 import Landing from './features/landing/Landing'
 import Logo from './components/Logo'
 import LegalPage, { LegalLinks } from './features/legal/LegalPage'
@@ -30,6 +31,8 @@ const icons = {
   approvals: 'M12 3 4 6v6c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V6zM9 12l2 2 4-4',
   companies:
     'M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M8 8h3M8 12h3M8 16h3M2 21h20',
+  reviews:
+    'M9 3h6l1 2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zM9 13l2 2 4-4',
   rooms:
     'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
 }
@@ -79,6 +82,12 @@ const navigation: {
     roles: ['BUYER', 'SELLER', 'VAULT_ADMIN', 'LEGAL'],
   },
   {
+    label: 'Duyệt dữ kiện',
+    href: '#/reviews',
+    icon: 'reviews',
+    roles: ['VAULT_ADMIN', 'LEGAL'],
+  },
+  {
     label: 'Doanh nghiệp',
     href: '#/companies',
     icon: 'companies',
@@ -96,6 +105,7 @@ const knownPaths = new Set([
   '/vault',
   '/access',
   '/disclosures',
+  '/reviews',
   '/companies',
   '/companies/new',
   '/rooms',
@@ -121,6 +131,7 @@ function routeAllowed(path: string, role?: Role) {
   if (path === '/rooms' || path.startsWith('/rooms/'))
     return ['SELLER', 'VAULT_ADMIN', 'LEGAL', 'TECH_DD'].includes(role)
   if (path === '/health') return role === 'VAULT_ADMIN'
+  if (path === '/reviews') return ['VAULT_ADMIN', 'LEGAL'].includes(role)
   if (path === '/deals' || path.startsWith('/deals/')) return true
   return false
 }
@@ -138,6 +149,7 @@ function crumb(path: string) {
   if (path === '/vault') return [['Tổng quan', '']]
   if (path === '/access' || path === '/disclosures')
     return [['Phê duyệt truy cập', '']]
+  if (path === '/reviews') return [['Duyệt dữ kiện', '']]
   if (path === '/deals') return [['Deals', '']]
   if (path.startsWith('/deals/'))
     return [
@@ -176,6 +188,7 @@ function crumb(path: string) {
 function titleOf(path: string) {
   if (path === '/vault') return 'Tổng quan'
   if (path === '/access' || path === '/disclosures') return 'Phê duyệt truy cập'
+  if (path === '/reviews') return 'Duyệt dữ kiện'
   if (path === '/deals') return 'Deals'
   if (path.startsWith('/deals/')) return 'Chi tiết deal'
   if (path === '/companies/new') return 'Tạo hồ sơ'
@@ -216,6 +229,8 @@ export default function Workspace() {
         initialDealId={params.get('deal') || undefined}
       />
     )
+  else if (path === '/reviews' && session)
+    screen = <ReviewQueue username={session.user.username} />
   else if (path === '/deals') screen = <DealList role={session?.user.role} />
   else if (parts[0] === 'deals' && parts[1] && session)
     screen = <DealDetail key={parts[1]} id={parts[1]} user={session.user} />

@@ -3,6 +3,7 @@ import type { RoomDetail, DocumentDetail } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
+import { canEditRooms, canOpenCompanies } from './permissions'
 import { request } from '../../api/workspace'
 import ActionDialog from '../../components/ActionDialog'
 
@@ -73,12 +74,12 @@ export default function RoomPage({
         <div>
           <p className="eyebrow">THƯƠNG VỤ · PHÒNG DỮ LIỆU</p>
           <h2>{room.title}</h2>
-          <a href={`#/companies/${room.company_id}`}>{room.company_name}</a>
+          {canOpenCompanies() ? <a href={`#/companies/${room.company_id}`}>{room.company_name}</a> : <span className="muted">{room.company_name}</span>}
         </div>
-        <div className="actions">
+        {canEditRooms() && <div className="actions">
           <button onClick={() => setUploading(!uploading)}>{uploading ? 'Đóng form upload' : 'Thêm tài liệu'}</button>
           <button className="danger-button" onClick={() => setPendingDelete({ kind: 'room' })} disabled={deleting === 'room'}>{deleting === 'room' ? 'Đang xóa…' : 'Xóa phòng'}</button>
-        </div>
+        </div>}
       </div>
       {message && (
         <p role="status" className="success-box">
@@ -150,9 +151,9 @@ export default function RoomPage({
                         ).toLocaleString('vi-VN')}
                       </td>
                       <td>
-                        <button className="danger-button" onClick={() => setPendingDelete({ kind: 'document', document })} disabled={deleting === document.id}>
+                        {canEditRooms() && <button className="danger-button" onClick={() => setPendingDelete({ kind: 'document', document })} disabled={deleting === document.id}>
                           {deleting === document.id ? 'Đang xóa…' : 'Xóa'}
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   ))}

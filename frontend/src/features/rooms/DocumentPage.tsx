@@ -8,6 +8,7 @@ import {
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import UploadForm from './UploadForm'
+import { canEditRooms } from './permissions'
 import FilePreview from './FilePreview'
 
 export default function DocumentPage({
@@ -74,9 +75,11 @@ export default function DocumentPage({
           </p>
           <a href={`#/rooms/${roomId}`}>Về phòng dữ liệu</a>
         </div>
-        <button onClick={() => setEditing(!editing)}>
-          {editing ? 'Đóng form phiên bản' : 'Thêm phiên bản'}
-        </button>
+        {canEditRooms() && (
+          <button onClick={() => setEditing(!editing)}>
+            {editing ? 'Đóng form phiên bản' : 'Thêm phiên bản'}
+          </button>
+        )}
       </div>
       {message && (
         <p className="success-box" role="status">

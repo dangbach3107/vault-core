@@ -15,7 +15,7 @@ ORDER = [
     "sellerFileApproval", "vdrOpened", "techDdSigned", "loiSubmitted", "legalClosingChecklist", "spaSigned",
     "dealClosed",
 ]
-FUTURE = "2030-01-01T00:00:00Z"
+FUTURE = f"{(date.today() + timedelta(days=180)).isoformat()}T00:00:00Z"  # inside the one-year NDA in FORMS
 
 
 def headers(client, username):
@@ -37,8 +37,20 @@ def create_deal(client, buyer="buyer", company=None):
     return response.json()
 
 
-def act(client, deal_id, action, note="Ghi chú bằng chứng mẫu"):
-    return client.post(f"/api/v1/deals/{deal_id}/actions/{action}", json={"note": note}, headers=headers(client, ACTION_USERS[action]))
+IN_A_YEAR = (date.today() + timedelta(days=365)).isoformat()
+OFFER = {"reference": "LOI-01", "price_low_vnd": "90000000000", "price_high_vnd": "120000000000", "valuation_basis": "EV", "exclusivity_days": 60, "valid_until": IN_A_YEAR}
+FORMS = {
+    "buyerRequest": {"buyer_request": {"capability": "Phần mềm quản lý kho", "budget_min_vnd": "70000000000", "budget_max_vnd": "150000000000"}},
+    "ndaRecorded": {"nda": {"reference": "NDA-01", "parties": ["Buyer", "Seller"], "signed_on": date.today().isoformat(), "expires_on": IN_A_YEAR}},
+    "indicativeLoiSubmitted": {"offer": OFFER},
+    "loiSubmitted": {"offer": {**OFFER, "reference": "OFFER-01"}},
+    "postDealHandoff": {"handoff": {"recipient": "Đội tích hợp", "handed_on": date.today().isoformat(), "items": ["Mã nguồn"]}},
+}
+
+
+def act(client, deal_id, action, note="Ghi chú bằng chứng mẫu", **extra):
+    body = {"note": note, **FORMS.get(action, {}), **extra}
+    return client.post(f"/api/v1/deals/{deal_id}/actions/{action}", json=body, headers=headers(client, ACTION_USERS[action]))
 
 
 def run_until(client, deal_id, stop):
@@ -49,7 +61,7 @@ def run_until(client, deal_id, stop):
 
 def upload(client, company_id, content=b"synthetic text v1"):
     seller = headers(client, "seller")
-    room = client.post("/api/v1/rooms", json={"company_id": company_id, "title": "Deal room"}, headers=seller).json()
+    room = client.post("/api/v1/rooms", json={"company_id": company_id, "title": f"Deal room {content[-12:]!r}"}, headers=seller).json()
     document = client.post(f'/api/v1/rooms/{room["id"]}/documents', data={"folder": "LEGAL_CORPORATE", "title": "Sample contract"},
                            files={"file": ("contract.txt", io.BytesIO(content), "text/plain")}, headers=seller)
     assert document.status_code == 201, document.text
@@ -59,7 +71,7 @@ def upload(client, company_id, content=b"synthetic text v1"):
 def test_gate_order_records_evidence_and_splits_signing_from_closing(client):
     deal = create_deal(client)
     assert act(client, deal["id"], "vdrOpened").status_code == 409
-    assert act(client, deal["id"], "buyerRequest", note="").status_code == 422
+    assert client.post(f'/api/v1/deals/{deal["id"]}/actions/buyerRequest', json={"note": "chỉ ghi chú"}, headers=headers(client, "buyer")).status_code == 422
     run_until(client, deal["id"], "dealClosed")
     signed = client.get(f'/api/v1/deals/{deal["id"]}', headers=headers(client, "admin")).json()["state"]
     # Signed but not yet closed is a real, visible state.
@@ -68,7 +80,7 @@ def test_gate_order_records_evidence_and_splits_signing_from_closing(client):
     closed = act(client, deal["id"], "dealClosed").json()["state"]
     assert closed["closing"]["status"] == "CLOSED"
     # Nothing is invented: the buyer request is exactly what the buyer wrote.
-    assert closed["buyer_request"]["summary"] == "Ghi chú bằng chứng mẫu"
+    assert closed["buyer_request"]["capability"] == "Phần mềm quản lý kho"
     assert closed["buyer_request"]["by"] == "buyer"
     assert closed["tech_dd"]["findings"] == []
     assert closed["fees"] == [] and closed["opportunities"] == []
@@ -278,3 +290,102 @@ def test_twenty_step_workflow_tracks_owner_conditions_and_stop_reason(client):
     assert stopped.status_code == 200
     assert stopped.json()["state"]["workflow"]["status"] == "STOPPED"
     assert "người đại diện" in stopped.json()["state"]["workflow"]["stop_reason"]
+
+
+def test_tech_dd_reads_only_rooms_of_deals_open_for_diligence(client):
+    company = seller_company(client)
+    other_company = seller_company(client)
+    deal = create_deal(client, company=company)
+    room, document = upload(client, company["id"])
+    other_room, _ = upload(client, other_company["id"])
+    tech = headers(client, "tech")
+    room_path = f'/api/v1/rooms/{room["id"]}'
+    assert client.get(room_path, headers=tech).status_code == 404  # VDR not opened yet
+    assert room["id"] not in {row["id"] for row in client.get("/api/v1/rooms", headers=tech).json()}
+    run_until(client, deal["id"], "techDdSigned")  # VDR opened
+    listed = {row["id"] for row in client.get("/api/v1/rooms", headers=tech).json()}
+    assert room["id"] in listed and other_room["id"] not in listed
+    assert client.get(room_path, headers=tech).status_code == 200
+    assert client.get(f'{room_path}/documents/{document["id"]}/versions/1/content', headers=tech).status_code == 200
+    assert client.get(f'/api/v1/rooms/{other_room["id"]}', headers=tech).status_code == 404
+    for action in ORDER[ORDER.index("techDdSigned"):]:
+        assert act(client, deal["id"], action).status_code == 200, action
+    assert client.get(room_path, headers=tech).status_code == 404  # closed deal: diligence over
+
+
+def test_finance_reads_only_files_cited_at_signing_and_closing(client):
+    company = seller_company(client)
+    deal = create_deal(client, company=company)
+    path = f'/api/v1/deals/{deal["id"]}'
+    room, contract = upload(client, company["id"])
+    _, unrelated = upload(client, company["id"], content=b"not evidence")
+    finance = headers(client, "finance")
+    run_until(client, deal["id"], "spaSigned")
+    assert client.get(path + "/closing-evidence", headers=finance).json() == []
+    foreign = seller_company(client)
+    _, foreign_doc = upload(client, foreign["id"])
+    bad = client.post(path + "/actions/spaSigned", json={"note": "HĐ-01", "document_ids": [foreign_doc["id"]]}, headers=headers(client, "legal"))
+    assert bad.status_code == 422  # files must come from this deal's seller
+    signed = client.post(path + "/actions/spaSigned", json={"note": "HĐ-01", "document_ids": [contract["id"]]}, headers=headers(client, "legal"))
+    assert signed.status_code == 200, signed.text
+    evidence = client.get(path + "/closing-evidence", headers=finance).json()
+    assert [(row["document_id"], row["action"], row["version_number"]) for row in evidence] == [(contract["id"], "spaSigned", 1)]
+    assert client.get(path + f'/closing-evidence/{contract["id"]}/content', headers=finance).content == b"synthetic text v1"
+    assert client.get(path + f'/closing-evidence/{unrelated["id"]}/content', headers=finance).status_code == 404
+    assert client.get(path + "/closing-evidence", headers=headers(client, "buyer")).status_code == 403
+    assert client.get(path + "/closing-evidence", headers=headers(client, "tech")).status_code == 403
+    assert client.get(f'/api/v1/rooms/{room["id"]}', headers=finance).status_code == 403  # no room-wide access
+
+
+def test_forms_are_required_and_nda_bounds_the_l2_grant(client):
+    deal = create_deal(client)
+    path = f'/api/v1/deals/{deal["id"]}'
+    run_until(client, deal["id"], "ndaRecorded")
+    admin = headers(client, "admin")
+    assert client.post(path + "/actions/ndaRecorded", json={"note": "NDA-01"}, headers=admin).status_code == 422
+    assert client.post(path + "/actions/ndaRecorded", json={**FORMS["ndaRecorded"], **FORMS["postDealHandoff"]}, headers=admin).status_code == 422
+    bad_dates = {"nda": {**FORMS["ndaRecorded"]["nda"], "expires_on": date.today().isoformat()}}
+    assert client.post(path + "/actions/ndaRecorded", json=bad_dates, headers=admin).status_code == 422
+    expiry = (date.today() + timedelta(days=30)).isoformat()
+    nda = {"nda": {**FORMS["ndaRecorded"]["nda"], "expires_on": expiry}}
+    recorded = client.post(path + "/actions/ndaRecorded", json=nda, headers=admin)
+    assert recorded.status_code == 200, recorded.text
+    assert recorded.json()["state"]["nda"]["reference"] == "NDA-01"
+    assert act(client, deal["id"], "sellerL2Approval").status_code == 200
+    buyer = headers(client, "buyer")
+    assert client.get(path, headers=buyer).json()["state"]["nda"]["expires_on"] == expiry
+    request_id = client.post(path + "/access-requests", json={"requested_level": "L2", "purpose": "Đánh giá"}, headers=buyer).json()["state"]["access_requests"][0]["id"]
+    decision = path + f"/access-requests/{request_id}/decision"
+    too_long = client.post(decision, json={"approved": True, "reason": "Đồng ý", "expires_at": FUTURE}, headers=headers(client, "seller"))
+    assert too_long.status_code == 422 and "NDA" in too_long.json()["detail"]
+    granted = client.post(decision, json={"approved": True, "reason": "Đồng ý", "expires_at": f"{expiry}T12:00:00Z"}, headers=headers(client, "seller"))
+    assert granted.status_code == 200, granted.text
+    grant = granted.json()["state"]["access_grants"][0]
+    assert grant["basis"] == "NDA" and grant["basis_ref"] == "NDA-01"
+
+
+def test_expired_nda_blocks_new_grants(client):
+    deal = create_deal(client)
+    path = f'/api/v1/deals/{deal["id"]}'
+    run_until(client, deal["id"], "ndaRecorded")
+    expired = {"nda": {**FORMS["ndaRecorded"]["nda"], "signed_on": (date.today() - timedelta(days=60)).isoformat(), "expires_on": (date.today() - timedelta(days=1)).isoformat()}}
+    assert client.post(path + "/actions/ndaRecorded", json=expired, headers=headers(client, "admin")).status_code == 200
+    assert act(client, deal["id"], "sellerL2Approval").status_code == 200
+    buyer = headers(client, "buyer")
+    request_id = client.post(path + "/access-requests", json={"requested_level": "L2", "purpose": "Đánh giá"}, headers=buyer).json()["state"]["access_requests"][0]["id"]
+    blocked = client.post(path + f"/access-requests/{request_id}/decision", json={"approved": True, "reason": "Đồng ý", "expires_at": FUTURE}, headers=headers(client, "seller"))
+    assert blocked.status_code == 409 and "hết hạn" in blocked.json()["detail"]
+
+
+def test_offer_and_handoff_forms_are_stored(client):
+    deal = create_deal(client)
+    path = f'/api/v1/deals/{deal["id"]}'
+    run_until(client, deal["id"], "indicativeLoiSubmitted")
+    inverted = {"offer": {**OFFER, "price_low_vnd": "200000000000"}}
+    assert client.post(path + "/actions/indicativeLoiSubmitted", json=inverted, headers=headers(client, "buyer")).status_code == 422
+    loi = act(client, deal["id"], "indicativeLoiSubmitted").json()["state"]["indicative_loi"]
+    assert loi["non_binding"] is True and loi["valuation_basis"] == "EV" and loi["price_low_vnd"] == "90000000000"
+    run_until(client, deal["id"], "dealClosed")
+    act(client, deal["id"], "dealClosed")
+    handoff = act(client, deal["id"], "postDealHandoff").json()["state"]["handoff"]
+    assert handoff["recipient"] == "Đội tích hợp" and handoff["items"] == ["Mã nguồn"]

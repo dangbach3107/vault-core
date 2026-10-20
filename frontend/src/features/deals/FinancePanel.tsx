@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { request } from '../../api/workspace'
 import { formatVnd, formatVndShort } from '../../lib/money'
 import type { Role } from '../auth/roles'
+import ClosingEvidence from './ClosingEvidence'
 import { formatDate, type Deal, type Fee } from './types'
 
 const FEE_LABELS: Record<Fee['type'], string> = {
@@ -298,6 +299,7 @@ export default function FinancePanel({
           </ul>
         </>
       )}
+      <ClosingEvidence deal={deal} />
     </section>
   )
 }

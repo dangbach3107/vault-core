@@ -1,7 +1,18 @@
 import { FormEvent, useState } from 'react'
 import { request } from '../../api/workspace'
 import { ROLE_META, type Role } from '../auth/roles'
+import { ActionFormFields } from './ActionForms'
+import {
+  FORM_ACTIONS,
+  formPayload,
+  initialFields,
+  type Fields,
+} from './formPayload'
 import { formatDateTime, type Catalog, type Deal } from './types'
+import { useSellerFiles } from '../rooms/useSellerFiles'
+
+// Files cited on these steps become the closing evidence Finance can read.
+const EVIDENCE_ACTIONS = ['legalClosingChecklist', 'spaSigned', 'dealClosed']
 
 type Props = {
   deal: Deal
@@ -14,6 +25,8 @@ type Props = {
 export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
   const [open, setOpen] = useState('')
   const [note, setNote] = useState('')
+  const [chosen, setChosen] = useState<string[]>([])
+  const [fields, setFields] = useState<Fields>({})
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const steps = deal.state.steps
@@ -29,6 +42,19 @@ export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
     (item) => item.role === role && available(item.key),
   )
   const done = catalog.actions.filter((item) => steps[item.key]).length
+  const citesFiles = EVIDENCE_ACTIONS.includes(open)
+  const hasForm = FORM_ACTIONS.includes(open)
+  const files = useSellerFiles(
+    deal.state.seller_profile?.company_id,
+    citesFiles || open === 'ndaRecorded',
+  )
+  const start = (action: string) => {
+    setOpen(action)
+    setNote('')
+    setChosen([])
+    setFields(initialFields(action))
+    setMessage('')
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -37,11 +63,16 @@ export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
     try {
       const updated = await request<Deal>(`/deals/${deal.id}/actions/${open}`, {
         method: 'POST',
-        body: JSON.stringify({ note: note.trim() }),
+        body: JSON.stringify({
+          note: note.trim(),
+          document_ids: citesFiles ? chosen : [],
+          ...formPayload(open, fields),
+        }),
       })
       onChange(updated)
       setOpen('')
       setNote('')
+      setChosen([])
       setMessage('Đã ghi nhận.')
     } catch (error) {
       setMessage((error as Error).message)
@@ -74,8 +105,18 @@ export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
               <strong>{item.label}</strong>
               {open === item.key ? (
                 <form onSubmit={submit} className="deal-note-form">
+                  {hasForm && (
+                    <ActionFormFields
+                      action={open}
+                      fields={fields}
+                      onChange={setFields}
+                      files={files}
+                    />
+                  )}
                   <label>
-                    Ghi chú / bằng chứng (số văn bản, ngày, nội dung chính)
+                    {hasForm
+                      ? 'Ghi chú thêm (không bắt buộc)'
+                      : 'Ghi chú / bằng chứng (số văn bản, ngày, nội dung chính)'}
                     <textarea
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
@@ -83,6 +124,37 @@ export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
                       rows={3}
                     />
                   </label>
+                  {citesFiles && (
+                    <fieldset className="file-picker">
+                      <legend>
+                        File chứng từ (Finance sẽ xem đúng các file và phiên bản
+                        này)
+                      </legend>
+                      {files.length === 0 ? (
+                        <p className="muted">
+                          Phòng dữ liệu của seller chưa có file.
+                        </p>
+                      ) : (
+                        files.map((file) => (
+                          <label key={file.id} className="check-row">
+                            <input
+                              type="checkbox"
+                              checked={chosen.includes(file.id)}
+                              onChange={(event) =>
+                                setChosen((value) =>
+                                  event.target.checked
+                                    ? [...value, file.id]
+                                    : value.filter((id) => id !== file.id),
+                                )
+                              }
+                            />
+                            {file.title} · phiên bản {file.version}
+                            <span className="muted"> · {file.room}</span>
+                          </label>
+                        ))
+                      )}
+                    </fieldset>
+                  )}
                   <div className="actions">
                     <button disabled={busy}>
                       {busy ? 'Đang lưu…' : 'Xác nhận đã hoàn tất'}
@@ -97,14 +169,7 @@ export default function ActionPanel({ deal, catalog, role, onChange }: Props) {
                   </div>
                 </form>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(item.key)
-                    setNote('')
-                    setMessage('')
-                  }}
-                >
+                <button type="button" onClick={() => start(item.key)}>
                   Thực hiện
                 </button>
               )}

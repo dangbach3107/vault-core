@@ -1,7 +1,7 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Integer, LargeBinary, String, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, LargeBinary, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -83,3 +83,29 @@ class DocumentBlob(Base):
     __tablename__ = "document_blobs"
     storage_key: Mapped[str] = mapped_column(String(40), primary_key=True)
     content: Mapped[bytes] = mapped_column(LargeBinary)
+
+
+class FactReview(Base):
+    """A request to verify one fact, decided by a reviewer who is not the requester."""
+    __tablename__ = "fact_reviews"
+    __table_args__ = (
+        CheckConstraint("status IN ('PENDING', 'APPROVED', 'REJECTED')", name="ck_fact_review_status"),
+        Index("ix_fact_reviews_company_status", "company_id", "status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[UUID] = mapped_column(ForeignKey("companies.id", ondelete="CASCADE"))
+    field: Mapped[str] = mapped_column(String(80))
+    value: Mapped[object] = mapped_column(JSONB)
+    source: Mapped[str] = mapped_column(String(500))
+    source_date: Mapped[date] = mapped_column(Date)
+    document: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    note: Mapped[str] = mapped_column(String(1000), default="")
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    verification: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    requested_by: Mapped[str] = mapped_column(String(80))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    decided_by: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reason: Mapped[str] = mapped_column(String(500), default="")
+

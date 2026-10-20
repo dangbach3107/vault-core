@@ -1,6 +1,5 @@
 import { useId } from 'react'
 import type { Fact } from '../../api/workspace'
-import { getAuthSession } from '../../api/config'
 import { issueLabels, optionLabels, statusLabels } from './fields'
 
 type Props = {
@@ -48,8 +47,6 @@ export default function FactEditor({
   }
   const reviewed =
     fact.verification !== undefined && fact.verification !== 'SELF_DECLARED'
-  // The provider of a fact cannot verify it; the backend enforces the same rule.
-  const reviewer = getAuthSession()?.user.role !== 'SELLER'
   return (
     <div className="fact-editor">
       <label htmlFor={id}>
@@ -89,12 +86,9 @@ export default function FactEditor({
             Nhãn xác minh
             <select
               value={fact.verification || 'SELF_DECLARED'}
-              disabled={!reviewer}
-              title={
-                reviewer
-                  ? undefined
-                  : 'Chỉ người duyệt VAULT gắn nhãn xác minh sau khi kiểm tra chứng từ.'
-              }
+              // Labels change only through a fact review; the backend enforces it.
+              disabled
+              title="Nhãn xác minh được gắn khi người duyệt chấp thuận yêu cầu duyệt dữ kiện (tab Nguồn & xác minh)."
               onChange={(e) =>
                 onChange({
                   ...fact,

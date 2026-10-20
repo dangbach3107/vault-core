@@ -5,20 +5,22 @@ import type { Role } from '../auth/roles'
 import AccessControlPanel from './AccessControlPanel'
 import ActionPanel from './ActionPanel'
 import BuyerPanel from './BuyerPanel'
+import DealRecords from './DealRecords'
 import FinancePanel from './FinancePanel'
 import TechDdPanel from './TechDdPanel'
 import WorkflowPanel from './WorkflowPanel'
 import { formatDateTime, type Catalog, type Deal } from './types'
 import './deals.css'
 
-type PanelKey = 'buyer' | 'access' | 'tech' | 'finance' | 'actions' | 'workflow'
+type PanelKey =
+  'records' | 'buyer' | 'access' | 'tech' | 'finance' | 'actions' | 'workflow'
 
 // Each role opens the deal on its own work first.
 const PANELS: Record<Role, PanelKey[]> = {
-  BUYER: ['buyer', 'access', 'actions', 'workflow'],
-  SELLER: ['access', 'actions', 'tech', 'workflow'],
-  VAULT_ADMIN: ['actions', 'access', 'tech', 'finance', 'workflow'],
-  LEGAL: ['access', 'actions', 'tech', 'workflow'],
+  BUYER: ['buyer', 'access', 'actions', 'records', 'workflow'],
+  SELLER: ['access', 'actions', 'records', 'tech', 'workflow'],
+  VAULT_ADMIN: ['actions', 'records', 'access', 'tech', 'finance', 'workflow'],
+  LEGAL: ['access', 'actions', 'records', 'tech', 'workflow'],
   TECH_DD: ['tech', 'actions', 'workflow'],
   FINANCE: ['finance', 'actions', 'workflow'],
 }
@@ -74,6 +76,7 @@ export default function DealDetail({
   const props = { deal, role, onChange: setDeal }
   const panels: Record<PanelKey, ReactNode> = {
     buyer: <BuyerPanel deal={deal} />,
+    records: <DealRecords deal={deal} />,
     access: <AccessControlPanel {...props} />,
     tech: <TechDdPanel {...props} />,
     finance: <FinancePanel {...props} />,

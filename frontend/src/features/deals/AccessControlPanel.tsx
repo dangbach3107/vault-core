@@ -1,11 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { request, type Room, type RoomDetail } from '../../api/workspace'
+import { FormEvent, useState } from 'react'
+import { request } from '../../api/workspace'
 import ActionDialog from '../../components/ActionDialog'
 import type { Role } from '../auth/roles'
 import { formatDate, formatDateTime, type Deal } from './types'
+import { useSellerFiles } from '../rooms/useSellerFiles'
 
 type DialogAction = { kind: 'approve' | 'reject' | 'revoke'; id: string }
-type RoomFile = { id: string; title: string; version: number; room: string }
 
 const LEVEL_LABELS: Record<string, string> = {
   L1: 'Lớp 1 · Teaser',
@@ -28,35 +28,34 @@ const STATUS_LABELS: Record<string, string> = {
   REVOKED: 'Đã thu hồi',
 }
 
-/** Files of the seller's rooms, so the approver can pick exactly what opens. */
-function useSellerFiles(
-  companyId: string | null | undefined,
-  enabled: boolean,
-) {
-  const [files, setFiles] = useState<RoomFile[]>([])
-  useEffect(() => {
-    if (!enabled || !companyId) return
-    request<Room[]>(`/rooms?company_id=${companyId}`)
-      .then((rooms) =>
-        Promise.all(
-          rooms.map((room) => request<RoomDetail>(`/rooms/${room.id}`)),
-        ),
-      )
-      .then((details) =>
-        setFiles(
-          details.flatMap((room) =>
-            room.documents.map((document) => ({
-              id: document.id,
-              title: document.title,
-              version: document.current_version,
-              room: room.title,
-            })),
-          ),
-        ),
-      )
-      .catch(() => setFiles([]))
-  }, [companyId, enabled])
-  return files
+/** The record that allows a level (NDA, LOI…); the grant may not outlive it. */
+function basisFor(deal: Deal, level?: string) {
+  const { nda, indicative_loi, definitive_offer } = deal.state
+  if (level === 'L1')
+    return { text: 'Căn cứ: Seller đã duyệt Teaser.', until: '' }
+  const source =
+    level === 'L2'
+      ? { name: 'NDA', ref: nda?.reference, until: nda?.expires_on }
+      : level === 'L3'
+        ? {
+            name: 'LOI sơ bộ',
+            ref: indicative_loi?.reference,
+            until: indicative_loi?.valid_until,
+          }
+        : {
+            name: 'Đề nghị chính thức',
+            ref: definitive_offer?.reference,
+            until: definitive_offer?.valid_until,
+          }
+  if (!source.until)
+    return {
+      text: `Chưa có ${source.name} được ghi nhận theo form; hệ thống sẽ từ chối cấp quyền này.`,
+      until: '',
+    }
+  return {
+    text: `Căn cứ: ${source.name} ${source.ref || ''}, hiệu lực đến ${formatDate(source.until)}. Ngày hết hạn quyền không được sau ngày này.`,
+    until: source.until,
+  }
 }
 
 export default function AccessControlPanel({
@@ -74,7 +73,6 @@ export default function AccessControlPanel({
   const [dialog, setDialog] = useState<DialogAction | null>(null)
   const [reason, setReason] = useState('')
   const [expires, setExpires] = useState('')
-  const [basisRef, setBasisRef] = useState('')
   const [canDownload, setCanDownload] = useState(false)
   const [chosen, setChosen] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -84,6 +82,10 @@ export default function AccessControlPanel({
   const requests = deal.state.access_requests || []
   const grants = deal.state.access_grants || []
   const events = deal.state.access_events || []
+  const dialogLevel = requests.find(
+    (item) => item.id === dialog?.id,
+  )?.requested_level
+  const basis = basisFor(deal, dialogLevel)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -108,7 +110,6 @@ export default function AccessControlPanel({
   const openDialog = (action: DialogAction) => {
     setReason('')
     setExpires('')
-    setBasisRef('')
     setCanDownload(false)
     setChosen(
       requests.find((item) => item.id === action.id)?.document_ids || [],
@@ -143,7 +144,6 @@ export default function AccessControlPanel({
                 expires_at: approved && expires ? `${expires}T23:59:59Z` : null,
                 ...(approved
                   ? {
-                      basis_ref: basisRef.trim(),
                       can_download: canDownload,
                       document_ids: chosen,
                     }
@@ -363,22 +363,15 @@ export default function AccessControlPanel({
           </label>
           {dialog.kind === 'approve' && (
             <>
+              <p className="basis-box">{basis.text}</p>
               <label>
                 Ngày hết hạn
                 <input
                   type="date"
                   value={expires}
+                  max={basis.until || undefined}
                   onChange={(event) => setExpires(event.target.value)}
                   required
-                />
-              </label>
-              <label>
-                Số/ngày văn bản căn cứ (NDA, LOI)
-                <input
-                  value={basisRef}
-                  onChange={(event) => setBasisRef(event.target.value)}
-                  maxLength={200}
-                  placeholder="Ví dụ: NDA-2026-014"
                 />
               </label>
               <fieldset className="file-picker">
