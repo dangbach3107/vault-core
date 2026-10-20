@@ -1,5 +1,8 @@
-// VND amounts arrive as decimal strings. Format them with string/BigInt math so
-// large values never pass through a JS float.
+// Amounts arrive as decimal strings. Format them with string/BigInt math so
+// large values never pass through a JS float. Deal money is VND; a company profile
+// states its own reporting currency (VND or JPY).
+
+export type Currency = 'VND' | 'JPY'
 
 function split(raw: string) {
   const value = raw.trim()
@@ -11,12 +14,20 @@ function split(raw: string) {
 
 /** 42000000000 → "42.000.000.000 VND" (exact, Vietnamese grouping). */
 export function formatVnd(raw: string | null | undefined): string {
+  return formatMoney(raw, 'VND')
+}
+
+/** Exact amount with the given currency code, e.g. "450.000.000 JPY". */
+export function formatMoney(
+  raw: string | null | undefined,
+  currency: Currency,
+): string {
   if (raw == null || raw === '') return 'Chưa có'
   const parts = split(String(raw))
   if (!parts) return String(raw)
   const grouped = parts.whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   const fraction = parts.fraction.replace(/0+$/, '')
-  return `${parts.negative ? '-' : ''}${grouped}${fraction ? `,${fraction}` : ''} VND`
+  return `${parts.negative ? '-' : ''}${grouped}${fraction ? `,${fraction}` : ''} ${currency}`
 }
 
 /** 42000000000 → "42,0 tỷ VND"; below one billion falls back to triệu or the exact amount. */

@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Annotated, Generic, TypeVar
+from typing import Annotated, Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -67,6 +67,21 @@ class Region(StrEnum):
     SOUTH = "SOUTH"
 
 
+class Country(StrEnum):
+    VN = "VN"
+    JP = "JP"
+    OTHER = "OTHER"
+
+
+class ValuationBasis(StrEnum):
+    EV = "EV"
+    EQUITY = "EQUITY"
+
+
+# Reporting currency for every amount in a profile (financial years and expected valuation).
+Currency = Literal["VND", "JPY"]
+
+
 class DealType(StrEnum):
     PRIMARY = "PRIMARY"
     SECONDARY = "SECONDARY"
@@ -75,8 +90,18 @@ class DealType(StrEnum):
 
 class FinancialYear(StrictModel):
     year: int = Field(ge=1900, le=2100)
-    revenue_vnd: Fact[Money] = Field(default_factory=Fact)
-    ebitda_vnd: Fact[SignedMoney] = Field(default_factory=Fact)
+    # Last day of the fiscal period labelled `year` (e.g. 2026-03-31 for a Japanese FY2025).
+    period_end: date | None = None
+    revenue: Fact[Money] = Field(default_factory=Fact)
+    ebitda: Fact[SignedMoney] = Field(default_factory=Fact)
+
+    @model_validator(mode="after")
+    def period_matches_year(self):
+        if self.period_end and self.period_end.year not in (self.year, self.year + 1):
+            raise ValueError("Ngày kết thúc kỳ tài chính phải thuộc năm đó hoặc năm sau.")
+        if self.period_end and self.period_end > date.today():
+            raise ValueError("Kỳ tài chính chưa kết thúc không được nhập số liệu.")
+        return self
 
 
 class CompanyInput(StrictModel):
@@ -85,6 +110,7 @@ class CompanyInput(StrictModel):
     tax_id: Fact[Annotated[str, Field(min_length=3, max_length=30)]] = Field(default_factory=Fact)
     founded_year: Fact[Annotated[int, Field(ge=1800, le=2100)]] = Field(default_factory=Fact)
     sector: Fact[Sector] = Field(default_factory=Fact)
+    country: Fact[Country] = Field(default_factory=Fact)
     region: Fact[Region] = Field(default_factory=Fact)
     address: Fact[Text] = Field(default_factory=Fact)
     description: Fact[Text] = Field(default_factory=Fact)
@@ -98,6 +124,10 @@ class CompanyInput(StrictModel):
     funds_destination: Fact[Text] = Field(default_factory=Fact)
     objectives: Fact[Text] = Field(default_factory=Fact)
     permitted_use: Fact[Text] = Field(default_factory=Fact)
+    # Expected deal value is not revenue: it states its own basis (EV or equity).
+    expected_valuation: Fact[Money] = Field(default_factory=Fact)
+    valuation_basis: Fact[ValuationBasis] = Field(default_factory=Fact)
+    currency: Currency = "VND"
     financials: list[FinancialYear] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
@@ -111,6 +141,10 @@ class CompanyInput(StrictModel):
             raise ValueError("Năm tài chính không được ở tương lai.")
         if self.founded_year.value and self.founded_year.value > date.today().year:
             raise ValueError("Năm thành lập không được ở tương lai.")
+        if self.region.value and self.country.value not in (None, Country.VN):
+            raise ValueError("Vùng Bắc/Trung/Nam chỉ dùng cho doanh nghiệp Việt Nam.")
+        if self.expected_valuation.value is not None and self.valuation_basis.value is None:
+            raise ValueError("Giá trị kỳ vọng cần ghi rõ cơ sở EV hay Equity.")
         return self
 
 
@@ -137,7 +171,9 @@ class CompanySummary(StrictModel):
     tax_id: str | None
     updated_at: datetime
     sector: Sector | None = None
+    country: Country | None = None
     region: Region | None = None
+    currency: Currency = "VND"
     revenue_band: str | None = None
     employee_band: str | None = None
     deal_type: DealType | None = None
@@ -150,8 +186,9 @@ class AnonymousPreview(StrictModel):
     layer: int = 1
     alias: str
     sector: Sector | None
+    country: Country | None
     region: Region | None
-    revenue_band_vnd: str | None
+    revenue_band: str | None
     employee_band: str | None
     deal_type: DealType | None
     notice: str = "Bản xem trước nội bộ; cần người duyệt nguy cơ nhận diện trước khi chia sẻ."
@@ -160,6 +197,7 @@ class AnonymousPreview(StrictModel):
 class IdentifiedPreview(StrictModel):
     layer: int = 2
     facts: dict[str, Fact[Text | Decimal | int]]
+    currency: Currency
     financials: list[FinancialYear]
     notice: str = "Bản xem trước nội bộ; không phải quyền chia sẻ cho buyer."
 

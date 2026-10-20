@@ -102,7 +102,8 @@ export default function ReviewQueue({ username }: { username: string }) {
                 {fieldLabel(row.field)}
               </strong>
               <p>
-                Giá trị gửi duyệt: <b>{valueText(row.field, row.value)}</b>
+                Giá trị gửi duyệt:{' '}
+                <b>{valueText(row.field, row.value, row.currency)}</b>
               </p>
               <small>
                 Nguồn: {row.source} ({row.source_date}) · gửi bởi{' '}
@@ -158,7 +159,7 @@ export default function ReviewQueue({ username }: { username: string }) {
           title={
             decision.approved ? 'Chấp thuận dữ kiện' : 'Từ chối yêu cầu duyệt'
           }
-          description={`${fieldLabel(decision.review.field)}: ${valueText(decision.review.field, decision.review.value)}`}
+          description={`${fieldLabel(decision.review.field)}: ${valueText(decision.review.field, decision.review.value, decision.review.currency)}`}
           confirmLabel={decision.approved ? 'Chấp thuận' : 'Từ chối'}
           danger={!decision.approved}
           busy={saving}

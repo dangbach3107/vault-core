@@ -4,13 +4,20 @@ import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import { optionLabels } from './fields'
 
+// Bands come from the backend per reporting currency; amounts are never converted.
 const REVENUE_BANDS = [
-  'Dưới 20 tỷ',
-  '20–dưới 50 tỷ',
-  '50–dưới 100 tỷ',
-  '100–dưới 200 tỷ',
-  '200–dưới 500 tỷ',
-  'Từ 500 tỷ',
+  'Dưới 20 tỷ VND',
+  '20–dưới 50 tỷ VND',
+  '50–dưới 100 tỷ VND',
+  '100–dưới 200 tỷ VND',
+  '200–dưới 500 tỷ VND',
+  'Từ 500 tỷ VND',
+  'Dưới 100 triệu JPY',
+  '100–dưới 300 triệu JPY',
+  '300 triệu–dưới 1 tỷ JPY',
+  '1–dưới 3 tỷ JPY',
+  '3–dưới 10 tỷ JPY',
+  'Từ 10 tỷ JPY',
 ]
 
 export default function CompanyList() {
@@ -18,6 +25,7 @@ export default function CompanyList() {
   const [search, setSearch] = useState('')
   const [sector, setSector] = useState('')
   const [region, setRegion] = useState('')
+  const [country, setCountry] = useState('')
   const [dealType, setDealType] = useState('')
   const [revenueBand, setRevenueBand] = useState('')
   const [page, setPage] = useState(0)
@@ -36,6 +44,7 @@ export default function CompanyList() {
       if (sector && item.sector !== sector) return false
       // Region filter
       if (region && item.region !== region) return false
+      if (country && item.country !== country) return false
       // Deal type filter
       if (dealType && item.deal_type !== dealType) return false
       // Revenue band filter
@@ -67,16 +76,26 @@ export default function CompanyList() {
 
       return true
     })
-  }, [allCompanies, sector, region, dealType, revenueBand, search, viewMode])
+  }, [
+    allCompanies,
+    sector,
+    region,
+    country,
+    dealType,
+    revenueBand,
+    search,
+    viewMode,
+  ])
 
   const hasActiveFilters = Boolean(
-    search || sector || region || dealType || revenueBand,
+    search || sector || region || country || dealType || revenueBand,
   )
 
   const resetFilters = () => {
     setSearch('')
     setSector('')
     setRegion('')
+    setCountry('')
     setDealType('')
     setRevenueBand('')
     setPage(0)
@@ -188,7 +207,24 @@ export default function CompanyList() {
           </div>
 
           <div>
-            <label htmlFor="filter-region">Khu vực</label>
+            <label htmlFor="filter-country">Quốc gia</label>
+            <select
+              id="filter-country"
+              value={country}
+              onChange={(e) => {
+                setCountry(e.target.value)
+                setPage(0)
+              }}
+            >
+              <option value="">Tất cả quốc gia</option>
+              <option value="VN">{optionLabels.VN}</option>
+              <option value="JP">{optionLabels.JP}</option>
+              <option value="OTHER">{optionLabels.OTHER}</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="filter-region">Vùng tại Việt Nam</label>
             <select
               id="filter-region"
               value={region}
@@ -303,7 +339,12 @@ export default function CompanyList() {
                   </span>
                 </div>
                 <div className="deal-region-pill">
-                  {optionLabels[item.region || ''] || 'Chưa có khu vực'}
+                  {[
+                    optionLabels[item.country || ''],
+                    optionLabels[item.region || ''],
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || 'Chưa có khu vực'}
                 </div>
 
                 <div className="deal-metrics-table">

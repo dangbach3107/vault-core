@@ -4,7 +4,7 @@ import { request } from '../../api/workspace'
 import { LoadState } from '../../components/LoadState'
 import { useLoad } from '../../hooks/useLoad'
 import FactEditor from './FactEditor'
-import { blankFact, blankProfile, fields } from './fields'
+import { blankFact, blankProfile, currencyLabels, fields } from './fields'
 
 const groups = [
   {
@@ -13,11 +13,25 @@ const groups = [
   },
   {
     title: 'Ngành, khu vực, quy mô',
-    keys: ['sector', 'region', 'employees', 'customer_groups', 'technology'],
+    keys: [
+      'sector',
+      'country',
+      'region',
+      'employees',
+      'customer_groups',
+      'technology',
+    ],
   },
   {
     title: 'Nhu cầu giao dịch',
-    keys: ['deal_type', 'stake_percent', 'funds_destination', 'objectives'],
+    keys: [
+      'deal_type',
+      'stake_percent',
+      'expected_valuation',
+      'valuation_basis',
+      'funds_destination',
+      'objectives',
+    ],
   },
   {
     title: 'Cổ đông, người quyết định, phạm vi sử dụng',
@@ -80,7 +94,7 @@ export default function CompanyForm({ company }: { company?: Company }) {
   }
   function financialFact(
     index: number,
-    key: 'revenue_vnd' | 'ebitda_vnd',
+    key: 'revenue' | 'ebitda',
     value: Fact,
   ) {
     update({
@@ -91,11 +105,13 @@ export default function CompanyForm({ company }: { company?: Company }) {
     })
   }
   const cancelHref = company ? `#/companies/${company.id}` : '#/companies'
+  const currency = profile.currency || 'VND'
   return (
     <section>
       <p className="lede">
         Lưu bản nháp chỉ cần tên doanh nghiệp. Ô trống được giữ là chưa cung
-        cấp. Tiền tệ: VND; không tự làm tròn số tiền.
+        cấp. Mọi số tiền trong hồ sơ dùng một đơn vị tiền (chọn ở phần Tài
+        chính); không tự làm tròn số tiền.
       </p>
       <form onSubmit={submit}>
         {groups.map((group) => (
@@ -115,15 +131,31 @@ export default function CompanyForm({ company }: { company?: Company }) {
                   key={field.key}
                   required={field.key === 'company_name'}
                   fact={(profile[field.key] || blankFact()) as Fact}
-                  onChange={(fact) =>
-                    update({ ...profile, [field.key]: fact })
-                  }
+                  onChange={(fact) => update({ ...profile, [field.key]: fact })}
                 />
               ))}
           </fieldset>
         ))}
         <fieldset disabled={saving} className="panel form-section">
-          <legend>Tài chính — tối đa 3 năm (VND)</legend>
+          <legend>Tài chính — tối đa 3 năm ({currency})</legend>
+          <label>
+            Đơn vị tiền của hồ sơ
+            <select
+              value={currency}
+              onChange={(e) =>
+                update({
+                  ...profile,
+                  currency: e.target.value as Profile['currency'],
+                })
+              }
+            >
+              {Object.entries(currencyLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           {(profile.financials || []).map((row, index) => (
             <div className="financial-row" key={index}>
               <label>
@@ -146,18 +178,36 @@ export default function CompanyForm({ company }: { company?: Company }) {
                   }
                 />
               </label>
+              <label>
+                Ngày kết thúc kỳ — dòng {index + 1}
+                <input
+                  type="date"
+                  value={row.period_end || ''}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) =>
+                    update({
+                      ...profile,
+                      financials: profile.financials?.map((item, i) =>
+                        i === index
+                          ? { ...item, period_end: e.target.value || null }
+                          : item,
+                      ),
+                    })
+                  }
+                />
+              </label>
               <FactEditor
-                label={`Doanh thu VND — dòng ${index + 1}`}
+                label={`Doanh thu ${currency} — dòng ${index + 1}`}
                 kind="money"
                 min={0}
-                fact={(row.revenue_vnd || blankFact()) as Fact}
-                onChange={(fact) => financialFact(index, 'revenue_vnd', fact)}
+                fact={(row.revenue || blankFact()) as Fact}
+                onChange={(fact) => financialFact(index, 'revenue', fact)}
               />
               <FactEditor
-                label={`EBITDA VND — dòng ${index + 1}`}
+                label={`EBITDA ${currency} — dòng ${index + 1}`}
                 kind="money"
-                fact={(row.ebitda_vnd || blankFact()) as Fact}
-                onChange={(fact) => financialFact(index, 'ebitda_vnd', fact)}
+                fact={(row.ebitda || blankFact()) as Fact}
+                onChange={(fact) => financialFact(index, 'ebitda', fact)}
               />
               <button
                 type="button"
@@ -186,8 +236,9 @@ export default function CompanyForm({ company }: { company?: Company }) {
                     ...(profile.financials || []),
                     {
                       year: new Date().getFullYear() - 1,
-                      revenue_vnd: blankFact(),
-                      ebitda_vnd: blankFact(),
+                      period_end: null,
+                      revenue: blankFact(),
+                      ebitda: blankFact(),
                     },
                   ],
                 })

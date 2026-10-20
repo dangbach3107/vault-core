@@ -161,8 +161,11 @@ Trang `#/deals/<id>` là nơi làm việc theo deal; mỗi vai trò mở deal �
 - Ký hợp đồng (`spaSigned`) và đóng giao dịch (`dealClosed`) là hai bước riêng. Khi ghi nhận checklist điều kiện đóng, ký hoặc đóng, Legal/Admin chọn file chứng từ từ phòng dữ liệu của seller; Finance chỉ đọc đúng các file và phiên bản đó qua `/deals/<id>/closing-evidence`, không vào được phòng dữ liệu.
 - Tech DD chỉ thấy phòng dữ liệu của seller trong deal đã mở phòng dữ liệu, chưa đóng và chưa dừng. Legal và Tech DD xem phòng dữ liệu ở chế độ chỉ đọc.
 - Nút "Nạp dữ liệu minh họa" (Admin) gắn cờ `is_sample`; giao diện hiện nhãn "Dữ liệu minh họa". Không dùng nó làm bằng chứng nghiệm thu.
+- Hồ sơ có quốc gia, một đơn vị tiền (VND hoặc JPY) cho mọi số tiền, ngày kết thúc kỳ cho từng năm tài chính, và giá trị kỳ vọng ghi rõ EV/Equity (không phải doanh thu). Hệ thống không quy đổi tiền.
 - Hồ sơ chỉ lưu dữ kiện tự khai. Muốn có nhãn xác minh, Seller/Admin gửi duyệt dữ kiện (tab "Nguồn & xác minh") kèm nguồn và file bằng chứng; Legal/Admin khác người gửi chấp thuận hoặc từ chối ở `#/reviews`.
 - Nhu cầu mua, NDA, LOI sơ bộ, đề nghị chính thức và bàn giao có form riêng. NDA/LOI là căn cứ để duyệt Lớp 2/Lớp 3/tài liệu closing: căn cứ hết hạn thì không cấp quyền mới, và quyền không được kéo dài quá hạn căn cứ.
+
+Để có sẵn một case đầy đủ (tài liệu mẫu khác nhau, mọi bước do đúng vai trò thực hiện): `DEMO_ROLE_PASSWORD=<mật khẩu demo> python -m backend.demo_case --base http://127.0.0.1:8001 --buyer buyer2`. Tất cả được gắn "Dữ liệu minh họa".
 
 Tài khoản: `buyer`, `buyer2`, `seller`, `seller2`, `admin`, `legal`, `tech`, `finance`. Mật khẩu local mặc định là `vault-demo`; đổi bằng `DEMO_ROLE_PASSWORD` và đặt `DEMO_AUTH_SECRET` riêng khi chạy hosted demo. Token có hạn 8 giờ. Cơ chế này dành cho synthetic MVP, không phải SSO/MFA production. Phạm vi đã/chưa làm: [.planning/SCOPE_BASELINE.md](.planning/SCOPE_BASELINE.md).
 

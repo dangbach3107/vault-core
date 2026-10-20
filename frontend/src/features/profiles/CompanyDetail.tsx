@@ -50,6 +50,7 @@ export default function CompanyDetail({
     'tax_id',
     'founded_year',
     'sector',
+    'country',
     'region',
     'address',
     'description',
@@ -58,6 +59,8 @@ export default function CompanyDetail({
     'technology',
     'deal_type',
     'stake_percent',
+    'expected_valuation',
+    'valuation_basis',
     'funds_destination',
     'objectives',
     'shareholders',
@@ -168,6 +171,11 @@ export default function CompanyDetail({
                 <FactView
                   key={item.field.key}
                   name={item.field.label}
+                  currency={
+                    item.field.amount
+                      ? company.profile.currency || 'VND'
+                      : undefined
+                  }
                   fact={item.fact}
                 />
               ))}
@@ -186,13 +194,13 @@ export default function CompanyDetail({
               <dl className="preview-grid">
                 <FactView
                   name="Doanh thu"
-                  money
-                  fact={(row.revenue_vnd || {}) as Fact}
+                  currency={company.profile.currency || 'VND'}
+                  fact={(row.revenue || {}) as Fact}
                 />
                 <FactView
                   name="EBITDA"
-                  money
-                  fact={(row.ebitda_vnd || {}) as Fact}
+                  currency={company.profile.currency || 'VND'}
+                  fact={(row.ebitda || {}) as Fact}
                 />
               </dl>
             </section>
@@ -211,6 +219,11 @@ export default function CompanyDetail({
               <FactView
                 key={item.field.key}
                 name={item.field.label}
+                currency={
+                  item.field.amount
+                    ? company.profile.currency || 'VND'
+                    : undefined
+                }
                 fact={item.fact}
               />
             ))}

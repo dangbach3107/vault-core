@@ -18,6 +18,7 @@ const mockCompanies: Summary[] = [
     employee_band: '50–199',
     deal_type: 'PRIMARY',
     stake_percent: '30',
+    currency: 'VND',
     verified_facts_count: 14,
     total_facts_count: 15,
   },
@@ -34,6 +35,7 @@ const mockCompanies: Summary[] = [
     employee_band: '200–999',
     deal_type: 'SECONDARY',
     stake_percent: '100',
+    currency: 'VND',
     verified_facts_count: 12,
     total_facts_count: 15,
   },
@@ -79,20 +81,18 @@ test('renders buyer discovery mode with deal cards and filters by sector', async
 test('zero verified facts stays zero', async () => {
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify([
-            {
-              ...mockCompanies[0],
-              verified_facts_count: 0,
-              total_facts_count: 20,
-            },
-          ]),
-          { headers: { 'Content-Type': 'application/json' } },
-        ),
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          {
+            ...mockCompanies[0],
+            verified_facts_count: 0,
+            total_facts_count: 20,
+          },
+        ]),
+        { headers: { 'Content-Type': 'application/json' } },
       ),
+    ),
   )
   render(<CompanyList />)
   expect(

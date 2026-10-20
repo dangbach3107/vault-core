@@ -2,6 +2,22 @@
 
 Cập nhật: **2026-10-20**.
 
+## Cập nhật 2026-10-20 — case demo đầy đủ qua API (bước 5 kế hoạch tiếp)
+
+- `python -m backend.demo_case --base <url>` (cần `DEMO_ROLE_PASSWORD`) dựng một deal hoàn chỉnh qua API công khai, từng bước bằng đúng vai trò: hồ sơ + phòng dữ liệu với 5 PDF nội dung khác nhau (ĐKDN, BCTC, kiến trúc, NDA, hợp đồng), duyệt dữ kiện có bằng chứng, nhu cầu mua, NDA, LOI, cấp quyền Lớp 2/3 theo file, Tech DD (2 finding, phản hồi, đóng, ký), đề nghị chính thức, ký rồi đóng với file chứng từ, 3 khoản phí (thu một phần / quá hạn / đã xuất hóa đơn), bàn giao.
+- Mọi tên, tài liệu và nội dung PDF ghi "Dữ liệu minh họa"; không dùng nút "hoàn tất mẫu".
+- `backend/tests/test_demo_case.py` chạy cả case rồi kiểm tra từng vai trò chỉ thấy phần của mình (Buyer không thấy phí/Tech DD, Buyer 2 không thấy deal, Buyer chỉ đọc 2 file được cấp ở chế độ chỉ xem, Finance chỉ thấy chứng từ ký/đóng).
+- Xác minh: 69 test Python.
+
+## Cập nhật 2026-10-20 — quốc gia, đơn vị tiền, kỳ tài chính (bước 4 kế hoạch tiếp)
+
+- Hồ sơ có `country` (VN/JP/khác), `currency` (VND hoặc JPY, áp dụng cho mọi số tiền của hồ sơ), `expected_valuation` + `valuation_basis` (EV/Equity) tách khỏi doanh thu; vùng Bắc/Trung/Nam chỉ cho doanh nghiệp Việt Nam.
+- Năm tài chính có `period_end` (ví dụ 2026-03-31 cho FY2025 Nhật); trường đổi tên `revenue_vnd/ebitda_vnd` → `revenue/ebitda`. Migration `0009` đổi dữ liệu cũ (gắn `currency: VND`) và đường dẫn duyệt dữ kiện; có downgrade.
+- Dải doanh thu Lớp 1 theo đơn vị tiền (nhãn VND/JPY riêng, không quy đổi); Lớp 1 hiện quốc gia; Lớp 2 trả `currency`.
+- Giao diện: chọn đơn vị tiền và ngày kết thúc kỳ trong form; tiền hiển thị kèm VND/JPY; bộ lọc quốc gia ở danh sách hồ sơ.
+- Tiền trong deal (phí, LOI, ngân sách) vẫn là VND.
+- Xác minh: 67 test Python, 25 test frontend, 9 test Chromium, tsc, eslint, OpenAPI, alembic check; dry-run `0009` lên/xuống với dữ liệu dạng cũ.
+
 ## Cập nhật 2026-10-20 — quy trình duyệt dữ kiện (bước 3 kế hoạch tiếp)
 
 - Migration `0008` thêm bảng `fact_reviews`. Seller (chủ hồ sơ) hoặc Admin gửi duyệt từng dữ kiện (kể cả doanh thu/EBITDA theo năm) kèm nguồn, ngày nguồn và file bằng chứng trong phòng dữ liệu của chính doanh nghiệp (phiên bản cố định lúc gửi).

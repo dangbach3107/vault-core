@@ -23,7 +23,7 @@ test('keeps draft input after a save failure and allows retry', async () => {
   expect(screen.getByRole('button', { name: 'Lưu bản nháp' })).toBeEnabled()
   const body = JSON.parse(fetchMock.mock.calls[0][1].body)
   expect(body.company_name.value).toBe('Công ty mẫu')
-  expect(body.financials[0].revenue_vnd.value).toBeNull()
+  expect(body.financials[0].revenue.value).toBeNull()
 })
 
 test('editing a reviewed fact resets its review label and reviewer', async () => {

@@ -16,7 +16,7 @@ export type Preview =
 export type Fact = Omit<Profile['company_name'], 'value'> & {
   value?: string | number | null
 }
-export type FieldName = Exclude<keyof Profile, 'financials'>
+export type FieldName = Exclude<keyof Profile, 'financials' | 'currency'>
 
 export async function getFile(
   path: string,

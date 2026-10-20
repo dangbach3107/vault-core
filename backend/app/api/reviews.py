@@ -22,6 +22,7 @@ Reviewer = Annotated[UserResponse, Depends(require_roles("LEGAL", "VAULT_ADMIN")
 def review_response(review: FactReview, company: Company) -> ReviewResponse:
     return ReviewResponse(
         id=review.id, company_id=review.company_id, company_alias=company.alias, company_name=company.name,
+        currency=(company.profile or {}).get("currency", "VND"),
         field=review.field, value=review.value, source=review.source, source_date=review.source_date,
         document=review.document, note=review.note, status=review.status, verification=review.verification,
         requested_by=review.requested_by, requested_at=review.requested_at, decided_by=review.decided_by,
